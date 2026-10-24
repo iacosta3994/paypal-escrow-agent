@@ -1,5 +1,6 @@
 requests>=2.31
 python-dotenv>=1.0
+laya==0.4.14
 flask>=3.0
 anthropic>=0.40
 openai>=1.50
