@@ -10,14 +10,16 @@ app = Flask(__name__)
 
 PAGE = """
 <!doctype html><title>Escrow Agent</title>
+<meta http-equiv="refresh" content="10">
 <h1>Escrow Agent — live</h1>
 <h2>Decisions</h2>
 <table border=1 cellpadding=6>
 <tr><th>deal</th><th>verdict</th><th>confidence</th><th>tier</th>
-<th>cost</th><th>reasoning</th></tr>
+<th>cost</th><th>shadow</th><th>agreement</th><th>reasoning</th></tr>
 {% for d in decisions %}
 <tr><td>{{d.deal_id}}</td><td><b>{{d.verdict}}</b></td><td>{{d.confidence}}</td>
-<td>{{d.tier}}</td><td>${{d.cost_usd}}</td><td>{{d.reasoning}}</td></tr>
+<td>{{d.tier}}</td><td>${{d.cost_usd}}</td><td>{{d.shadow_verdict or '—'}}</td>
+<td>{{d.agreement if d.agreement is not none else '—'}}</td><td>{{d.reasoning}}</td></tr>
 {% endfor %}
 </table>
 <p><b>Total AI spend:</b> ${{spend }} · <b>decisions:</b> {{ decisions|length }}</p>

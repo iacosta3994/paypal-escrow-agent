@@ -71,6 +71,13 @@ class Decision:
     decided_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    # Shadow mode (Tier 1 demoted to a sensor, 2026-10-23): the Laya
+    # forest runs on every case Tier 0 doesn't settle, but its verdict is
+    # only recorded next to the real decision — it never overrides it.
+    # Populated only when the forest ran; None otherwise.
+    shadow_verdict: str | None = None      # forest's verdict, as logged
+    shadow_confidence: float | None = None  # forest's tree-agreement fraction
+    agreement: float | None = None  # fraction of trees backing the final verdict
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -82,4 +89,7 @@ class Decision:
             "tier": self.tier,
             "cost_usd": self.cost_usd,
             "decided_at": self.decided_at,
+            "shadow_verdict": self.shadow_verdict,
+            "shadow_confidence": self.shadow_confidence,
+            "agreement": self.agreement,
         }

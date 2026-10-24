@@ -113,6 +113,24 @@ def _seller_history(deal: Deal, ev: dict) -> CheckResult:
                        f"{rate:.0%} prior completion", 1.0)
 
 
+def _condition_clear(deal: Deal, ev: dict) -> CheckResult:
+    t = ev.get("tracking", {})
+    msgs = " ".join(ev.get("messages", [])).lower()
+    problems = []
+    if t.get("exception"):
+        problems.append(f"carrier exception: {t['exception']}")
+    for phrase in ("dented", "damaged", "wrong item", "not what",
+                   "broken", "not working"):
+        if phrase in msgs:
+            problems.append(f"buyer reports: '{phrase}'")
+            break
+    if problems:
+        return CheckResult("condition_clear", CheckStatus.FAIL,
+                           "; ".join(problems), 1.8)
+    return CheckResult("condition_clear", CheckStatus.UNKNOWN,
+                       "no condition report", 0.4)
+
+
 CHECKS: list[Check] = [
     Check("tracking_exists", 1.0, _tracking_exists),
     Check("pickup_confirmed", 1.2, _pickup_confirmed),
@@ -123,6 +141,7 @@ CHECKS: list[Check] = [
     Check("amount_match", 1.0, _amount_match),
     Check("no_dispute", 0.7, _no_dispute),
     Check("seller_history", 0.6, _seller_history),
+    Check("condition_clear", 0.4, _condition_clear),
 ]
 
 

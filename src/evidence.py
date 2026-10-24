@@ -54,7 +54,8 @@ class TrackingSimulator:
 
 
 def gather_evidence(deal: Deal, tracking: dict,
-                    days_since_funding: int) -> dict:
+                    days_since_funding: int,
+                    messages: list[str] | None = None) -> dict:
     """Assemble the evidence dict the checklist consumes."""
     return {
         "tracking": tracking,
@@ -62,5 +63,6 @@ def gather_evidence(deal: Deal, tracking: dict,
         "authorized_cents": deal.terms.amount_cents,
         "dispute_filed": False,
         "seller_completion_rate": round(random.uniform(0.85, 1.0), 2),
+        "messages": messages or [],
         "gathered_at": datetime.now(timezone.utc).isoformat(),
     }
