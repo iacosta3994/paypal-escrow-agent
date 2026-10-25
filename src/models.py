@@ -14,12 +14,15 @@ class DealState(str, Enum):
     RELEASED = "released"      # captured -> seller
     REFUNDED = "refunded"      # voided -> buyer
     ESCALATED = "escalated"    # humans decide
+    DECLINED = "declined"      # terminal: terms declined, no money moved
+    SPLIT_SETTLED = "split_settled"  # terminal: split capture/void done
 
 
 class Verdict(str, Enum):
     RELEASE = "release"
     REFUND = "refund"
     INVESTIGATE = "investigate"
+    SPLIT = "split"
 
 
 class CheckStatus(str, Enum):
@@ -49,6 +52,18 @@ class Deal:
     paypal_auth_id: str | None = None
     paypal_approve_url: str | None = None  # buyer approval link, when pending
     dispute_filed: bool = False  # a party has an open dispute on this deal
+    # Two-party lifecycle (L1 seams): who proposed the terms (None =
+    # manager-proposed / pre-agreed), each party's acceptance
+    # timestamp, buyer receipt confirmation / approval, dispute
+    # evidence, and split-settlement bookkeeping.
+    proposed_by: str | None = None
+    terms_acceptances: dict[str, str] = field(default_factory=dict)
+    buyer_confirmed_at: str | None = None
+    buyer_approved_at: str | None = None
+    dispute_evidence: list[dict] = field(default_factory=list)
+    capture_id: str | None = None
+    split_released_cents: int | None = None
+    split_voided_cents: int | None = None
     # Authorization aging (S5): when the money was held, and — read
     # back from PayPal's authorization object when available — when
     # the hold was created and when it expires. PayPal fully honors
@@ -69,6 +84,7 @@ class CheckResult:
     status: CheckStatus
     evidence: str = ""
     weight: float = 1.0  # higher = more decisive
+    detail: dict = field(default_factory=dict)  # generic structured payload
 
 
 @dataclass
@@ -90,6 +106,7 @@ class Decision:
     shadow_verdict: str | None = None      # forest's verdict, as logged
     shadow_confidence: float | None = None  # forest's tree-agreement fraction
     agreement: float | None = None  # fraction of trees backing the final verdict
+    split_release_cents: int | None = None  # for SPLIT: cents to capture
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -104,4 +121,5 @@ class Decision:
             "shadow_verdict": self.shadow_verdict,
             "shadow_confidence": self.shadow_confidence,
             "agreement": self.agreement,
+            "split_release_cents": self.split_release_cents,
         }

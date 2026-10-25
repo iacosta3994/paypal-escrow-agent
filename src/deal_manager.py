@@ -43,10 +43,72 @@ class DealManager:
     def __init__(self, use_paypal: bool = False):
         self.use_paypal = use_paypal
         self.deals: dict[str, Deal] = {}
+        self._transition_listeners = []
 
-    def propose(self, terms: DealTerms) -> Deal:
+    def on_transition(self, cb) -> None:
+        """Register a transition listener: cb(deal, old_state,
+        new_state), called only when a deal's state actually changes."""
+        self._transition_listeners.append(cb)
+
+    def _set_state(self, deal: Deal, new_state: DealState) -> None:
+        old_state = deal.state
+        deal.state = new_state
+        if old_state != new_state:
+            for cb in list(self._transition_listeners):
+                cb(deal, old_state, new_state)
+
+    def propose(self, terms: DealTerms, proposer: str | None = None) -> Deal:
+        if proposer not in (None, "buyer", "seller"):
+            raise ValueError(
+                f"proposer must be 'buyer', 'seller', or None, "
+                f"got {proposer!r}")
         deal = Deal(id=f"deal-{uuid.uuid4().hex[:8]}", terms=terms)
+        deal.proposed_by = proposer
+        if proposer is not None:
+            # The proposer authored the terms, so proposing IS their
+            # acceptance; the counterparty must still accept.
+            deal.terms_acceptances[proposer] = _now_iso()
         self.deals[deal.id] = deal
+        return deal
+
+    def accept_terms(self, deal: Deal, party: str) -> Deal:
+        """Record a party's acceptance of the proposed terms. Only
+        valid while the deal is PROPOSED; re-accepting is a no-op
+        that keeps the original timestamp."""
+        if party not in ("buyer", "seller"):
+            raise ValueError(
+                f"party must be 'buyer' or 'seller', got {party!r}")
+        if deal.state != DealState.PROPOSED:
+            raise ValueError(
+                f"cannot accept terms in state {deal.state}")
+        if party not in deal.terms_acceptances:
+            deal.terms_acceptances[party] = _now_iso()
+        return deal
+
+    def decline_terms(self, deal: Deal, party: str) -> Deal:
+        """Decline the proposed terms: the deal ends DECLINED
+        (terminal) with no money moved. Only valid from PROPOSED."""
+        if party not in ("buyer", "seller"):
+            raise ValueError(
+                f"party must be 'buyer' or 'seller', got {party!r}")
+        if deal.state != DealState.PROPOSED:
+            raise ValueError(
+                f"cannot decline terms in state {deal.state}")
+        self._set_state(deal, DealState.DECLINED)
+        return deal
+
+    def confirm_receipt(self, deal: Deal, party: str = "buyer") -> Deal:
+        """Record the buyer's confirmation of receipt. Buyer only,
+        only once the deal is FUNDED or MONITORING; repeat calls are
+        a no-op keeping the first timestamp. No state change."""
+        if party != "buyer":
+            raise ValueError(
+                f"only the buyer can confirm receipt, got {party!r}")
+        if deal.state not in (DealState.FUNDED, DealState.MONITORING):
+            raise ValueError(
+                f"cannot confirm receipt in state {deal.state}")
+        if deal.buyer_confirmed_at is None:
+            deal.buyer_confirmed_at = _now_iso()
         return deal
 
     def fund(self, deal: Deal,
@@ -59,6 +121,18 @@ class DealManager:
         Card-funded (payment_source given): PayPal authorizes at
         creation, so the deal is FUNDED with the money held.
         """
+        if deal.state != DealState.PROPOSED:
+            raise ValueError(
+                f"cannot fund deal in state {deal.state}")
+        if deal.proposed_by is not None:
+            # Party-proposed deal: BOTH parties must have accepted
+            # the terms before any money moves. (Manager-proposed
+            # deals, proposed_by None, are pre-agreed by construction
+            # and fund exactly as before.)
+            for party in ("buyer", "seller"):
+                if party not in deal.terms_acceptances:
+                    raise ValueError(
+                        f"cannot fund: {party} has not accepted the terms")
         if self.use_paypal:
             auth = paypal_client.create_authorization(
                 deal.terms.amount_cents, deal.terms.currency,
@@ -70,13 +144,14 @@ class DealManager:
             # FIX (2026-10-24): the authorization id used to be dropped
             # here, which made every later capture/void unreachable.
             deal.paypal_auth_id = auth.get("authorization_id")
-            deal.state = (DealState.FUNDED if deal.paypal_auth_id
-                          else DealState.AWAITING_APPROVAL)
+            self._set_state(
+                deal, DealState.FUNDED if deal.paypal_auth_id
+                else DealState.AWAITING_APPROVAL)
             if deal.paypal_auth_id:
                 _stamp_authorization(deal)
         else:
             deal.funded_at = _now_iso()
-            deal.state = DealState.FUNDED
+            self._set_state(deal, DealState.FUNDED)
         return deal
 
     def complete_funding(self, deal: Deal) -> Deal:
@@ -89,7 +164,7 @@ class DealManager:
         if not self.use_paypal:
             if deal.state == DealState.AWAITING_APPROVAL:
                 deal.funded_at = _now_iso()
-                deal.state = DealState.FUNDED
+                self._set_state(deal, DealState.FUNDED)
             return deal
         if deal.state != DealState.AWAITING_APPROVAL:
             raise ValueError(
@@ -97,7 +172,7 @@ class DealManager:
         auth = paypal_client.authorize_order(deal.paypal_order_id)
         deal.paypal_auth_id = auth["authorization_id"]
         _stamp_authorization(deal)
-        deal.state = DealState.FUNDED
+        self._set_state(deal, DealState.FUNDED)
         return deal
 
     def open_dispute(self, deal: Deal) -> Deal:
@@ -152,7 +227,7 @@ class DealManager:
                 key_evidence=[f"authorization age: {age} days",
                               f"days to expiry: ~{left}"],
                 tier=0, cost_usd=0.0))
-            deal.state = DealState.ESCALATED
+            self._set_state(deal, DealState.ESCALATED)
         return status
 
     def monitor(self, deal: Deal, tracking: dict,
@@ -163,7 +238,7 @@ class DealManager:
         adjudicate — then surface authorization aging (S5)."""
         if deal.state not in (DealState.FUNDED, DealState.MONITORING):
             raise ValueError(f"cannot monitor deal in state {deal.state}")
-        deal.state = DealState.MONITORING
+        self._set_state(deal, DealState.MONITORING)
         evidence = gather_evidence(deal, tracking, days_since_funding,
                                    messages)
         results = run_checklist(deal, evidence)
@@ -183,11 +258,13 @@ class DealManager:
         possibly run, and happily re-settled a RELEASED deal as
         REFUNDED.
         """
-        if deal.state in (DealState.RELEASED, DealState.REFUNDED):
+        if deal.state in (DealState.RELEASED, DealState.REFUNDED,
+                           DealState.SPLIT_SETTLED):
             raise ValueError(
                 f"deal {deal.id} is already settled ({deal.state.value}); "
                 f"refusing to settle again as {decision.verdict.value}")
-        if decision.verdict in (Verdict.RELEASE, Verdict.REFUND):
+        if decision.verdict in (Verdict.RELEASE, Verdict.REFUND,
+                                Verdict.SPLIT):
             if deal.state not in (DealState.FUNDED, DealState.MONITORING,
                                   DealState.DECIDED):
                 raise ValueError(
@@ -199,25 +276,37 @@ class DealManager:
         if decision.verdict == Verdict.RELEASE:
             if self.use_paypal:
                 paypal_client.capture(deal.paypal_auth_id)
-            deal.state = DealState.RELEASED
+            self._set_state(deal, DealState.RELEASED)
         elif decision.verdict == Verdict.REFUND:
             if self.use_paypal:
                 paypal_client.void(deal.paypal_auth_id)
-            deal.state = DealState.REFUNDED
+            self._set_state(deal, DealState.REFUNDED)
+        elif decision.verdict == Verdict.SPLIT:
+            if decision.split_release_cents is None:
+                raise ValueError(
+                    f"cannot split-settle deal {deal.id}: decision "
+                    "carries no split_release_cents")
+            from .split_settlement import execute_split
+            result = execute_split(deal, decision, self.use_paypal)
+            deal.capture_id = result["capture_id"]
+            deal.split_released_cents = result["released_cents"]
+            deal.split_voided_cents = result["voided_cents"]
+            self._set_state(deal, DealState.SPLIT_SETTLED)
         else:
             self._inconclusive = getattr(self, "_inconclusive", {})
             n = self._inconclusive.get(deal.id, 0) + 1
             self._inconclusive[deal.id] = n
             # An expiry escalation (auth_expiry) is sticky: an
             # inconclusive adjudication must not resurrect it.
-            deal.state = (DealState.ESCALATED
-                          if n >= 3 or deal.state == DealState.ESCALATED
-                          else DealState.MONITORING)
+            self._set_state(
+                deal, DealState.ESCALATED
+                if n >= 3 or deal.state == DealState.ESCALATED
+                else DealState.MONITORING)
         return deal
 
     def escalate(self, deal: Deal) -> Deal:
         """Explicit human handoff, e.g. from the dashboard."""
-        deal.state = DealState.ESCALATED
+        self._set_state(deal, DealState.ESCALATED)
         return deal
 
     def run_cycle(self, deal: Deal, tracking: dict,

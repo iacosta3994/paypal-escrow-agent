@@ -167,13 +167,29 @@ def get_authorization(authorization_id: str) -> dict:
     return r.json()
 
 
-def capture(authorization_id: str) -> dict:
-    """Release: capture the held funds to the seller."""
+def capture(authorization_id: str, amount_cents: int | None = None,
+            currency: str = "USD", final_capture: bool = False) -> dict:
+    """Release: capture the held funds to the seller.
+
+    With amount_cents=None this is the original full capture (empty
+    body). With an amount, capture exactly that many cents;
+    final_capture=False leaves the remainder of the authorization
+    open (voidable — see split_settlement), final_capture=True closes
+    the authorization with this capture.
+    """
+    if amount_cents is None:
+        body: dict = {}
+    else:
+        body = {
+            "amount": {"currency_code": currency,
+                       "value": f"{amount_cents / 100:.2f}"},
+            "final_capture": final_capture,
+        }
     r = requests.post(
         f"{_base_url()}/v2/payments/authorizations/{authorization_id}/capture",
         headers={**_headers(),
                  "PayPal-Request-Id": f"capture-{uuid.uuid4().hex}"},
-        json={},
+        json=body,
         timeout=30,
     )
     r.raise_for_status()

@@ -23,3 +23,4 @@ XAI_API_KEY = get("XAI_API_KEY")
 
 DASHBOARD_PORT = int(get("DASHBOARD_PORT", "5000"))
 AUDIT_LOG_PATH = get("AUDIT_LOG_PATH", "./audit.log.jsonl")
+NOTIFICATIONS_PATH = get("NOTIFICATIONS_PATH", "./notifications.jsonl")
