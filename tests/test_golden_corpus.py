@@ -42,16 +42,22 @@ def _run(amount_item, tracking, day=3, messages=None):
 
 # --- fulfillment messiness ---
 
-def test_partial_shipment_investigates():
-    """1 of 2 items delivered: NOT a release (the full amount is
-    held against both items) and NOT a refund (the rest may be in
-    transit). The delivered check reports UNKNOWN/partial."""
+def test_partial_shipment_splits():
+    """1 of 2 items delivered, every other decisive fact known-good:
+    SPLIT settlement (L2, 2026-10-24) — capture the delivered half,
+    void the rest — instead of parking the whole amount at
+    INVESTIGATE as this case originally expected. The delivered
+    check still reports UNKNOWN/partial; Tier 0 turns the fraction
+    into exact integer cents (floor)."""
     t = {**DELIVERED, "items_expected": 2, "items_delivered": 1}
     deal, decision, results = _run(CAMERA, t)
     assert results["delivered"].status.value == "unknown"
     assert "partial" in results["delivered"].evidence
-    assert decision.verdict == Verdict.INVESTIGATE
-    assert deal.state == DealState.MONITORING
+    assert decision.verdict == Verdict.SPLIT
+    assert decision.split_release_cents == CAMERA[0] // 2
+    assert deal.state == DealState.SPLIT_SETTLED
+    assert deal.split_released_cents == CAMERA[0] // 2
+    assert deal.split_voided_cents == CAMERA[0] - CAMERA[0] // 2
 
 
 def test_full_multi_item_delivery_releases():

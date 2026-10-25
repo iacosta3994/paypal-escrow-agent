@@ -41,6 +41,33 @@ def _tier0(deal: Deal, results: list[CheckResult]) -> Decision | None:
                           "No judgment call needed.",
                 key_evidence=[r.evidence], tier=0, cost_usd=0.0,
             )
+    # Accepted split settlement on an open dispute (dispute evidence,
+    # Track 5): the buyer has the item (delivered PASS) and has agreed
+    # in the dispute record to close it for a partial release. That is
+    # a party-agreed resolution, not a judgment call — it outranks the
+    # condition-dispute INVESTIGATE below (the damaged-but-kept case is
+    # exactly condition FAIL + this offer), but never a hard fail
+    # above: a seller who never shipped doesn't get a split.
+    res = by_name.get("dispute_resolution")
+    if res and res.status == CheckStatus.PASS:
+        cents = res.detail.get("split_release_cents")
+        delivered_r = by_name.get("delivered")
+        if (isinstance(cents, int) and not isinstance(cents, bool)
+                and 0 < cents < deal.terms.amount_cents
+                and delivered_r
+                and delivered_r.status == CheckStatus.PASS):
+            return Decision(
+                deal_id=deal.id, verdict=Verdict.SPLIT,
+                split_release_cents=cents, confidence=0.9,
+                reasoning=f"Dispute resolved by the buyer's accepted "
+                          f"split settlement: release {cents} of "
+                          f"{deal.terms.amount_cents} cents to the "
+                          f"seller and void the remaining "
+                          f"{deal.terms.amount_cents - cents} cents "
+                          f"back to the buyer. {res.evidence}.",
+                key_evidence=[res.evidence, delivered_r.evidence],
+                tier=0, cost_usd=0.0,
+            )
     # Item arrived but condition is disputed: never auto-release,
     # never auto-refund — judgment is required.
     cond = by_name.get("condition_clear")
@@ -63,6 +90,69 @@ def _tier0(deal: Deal, results: list[CheckResult]) -> Decision | None:
                       "address, amount matches, no disputes.",
             key_evidence=ev, tier=0, cost_usd=0.0,
         )
+    # Buyer-confirmation release: the buyer confirmed receipt and the
+    # decisive checks pass. The address check is NOT required here —
+    # the buyer is the authority on whether the item reached them.
+    # Placement matters: hard fails above already short-circuited to
+    # REFUND (amount_match FAIL included), and a condition FAIL above
+    # already forced INVESTIGATE, so this rule can never override
+    # either; the explicit condition check below keeps that true even
+    # if the blocks above are ever reordered.
+    if deal.buyer_confirmed_at is not None:
+        needed = ("delivered", "amount_match", "no_dispute")
+        cond = by_name.get("condition_clear")
+        if (all(by_name.get(n) and by_name[n].status == CheckStatus.PASS
+                for n in needed)
+                and not (cond and cond.status == CheckStatus.FAIL)):
+            ev = [by_name[n].evidence for n in needed]
+            return Decision(
+                deal_id=deal.id, verdict=Verdict.RELEASE, confidence=0.96,
+                reasoning=f"Buyer confirmed receipt at "
+                          f"{deal.buyer_confirmed_at} and the decisive "
+                          f"checks pass (delivered, amount matches, no "
+                          f"dispute): the buyer is the address "
+                          f"authority, so the address check is not "
+                          f"required to release.",
+                key_evidence=ev, tier=0, cost_usd=0.0,
+            )
+    # Partial shipment: some items verifiably delivered, the rest
+    # not — and every other decisive fact is known-good (amount
+    # matches, no dispute, condition not failed; hard fails already
+    # returned above). Settle proportionally instead of parking the
+    # whole amount: capture the delivered fraction, void the rest.
+    delivered = by_name.get("delivered")
+    if (delivered and delivered.status == CheckStatus.UNKNOWN
+            and "items_expected" in delivered.detail
+            and "items_delivered" in delivered.detail):
+        got = delivered.detail["items_delivered"]
+        expected = delivered.detail["items_expected"]
+        amount_r = by_name.get("amount_match")
+        dispute_r = by_name.get("no_dispute")
+        cond = by_name.get("condition_clear")
+        if (isinstance(got, int) and isinstance(expected, int)
+                and 0 < got < expected
+                and amount_r and amount_r.status == CheckStatus.PASS
+                and dispute_r and dispute_r.status == CheckStatus.PASS
+                and not (cond and cond.status == CheckStatus.FAIL)):
+            split = (deal.terms.amount_cents * got) // expected
+            if 0 < split < deal.terms.amount_cents:
+                return Decision(
+                    deal_id=deal.id, verdict=Verdict.SPLIT,
+                    confidence=0.9,
+                    reasoning=f"Partial shipment: {got} of {expected} "
+                              f"items delivered — split settlement "
+                              f"releases the delivered fraction "
+                              f"({got}/{expected}) of "
+                              f"{deal.terms.amount_cents} cents = "
+                              f"{split} cents to the seller and voids "
+                              f"the remaining "
+                              f"{deal.terms.amount_cents - split} cents "
+                              f"back to the buyer.",
+                    key_evidence=[delivered.evidence,
+                                  amount_r.evidence],
+                    tier=0, cost_usd=0.0,
+                    split_release_cents=split,
+                )
     return None
 
 

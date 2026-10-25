@@ -53,18 +53,50 @@ class TrackingSimulator:
         return base
 
 
+def _merge_dispute_tracking(deal: Deal, tracking: dict) -> dict:
+    """Merge seller-submitted tracking proof into carrier tracking.
+
+    Carrier data always wins: dispute-submitted tracking fills ONLY
+    fields missing from the carrier tracking, never overwrites them.
+    Only the LATEST seller tracking_proof record is considered, and
+    only ``number`` / ``carrier`` / ``pickup_scan`` can be filled —
+    delivery facts (delivered / delivered_zip / stalled_days) are
+    never taken from submitted evidence.
+    """
+    merged = dict(tracking) if tracking else {}
+    proofs = [r for r in deal.dispute_evidence
+              if r.get("party") == "seller"
+              and r.get("kind") == "tracking_proof"]
+    if not proofs:
+        return merged
+    data = proofs[-1].get("data") or {}
+    if not merged.get("number") and data.get("tracking_number"):
+        merged["number"] = data["tracking_number"]
+        if not merged.get("carrier") and data.get("carrier"):
+            merged["carrier"] = data["carrier"]
+    if not merged.get("pickup_scan") and data.get("pickup_scan"):
+        merged["pickup_scan"] = data["pickup_scan"]
+    return merged
+
+
 def gather_evidence(deal: Deal, tracking: dict,
                     days_since_funding: int,
                     messages: list[str] | None = None) -> dict:
     """Assemble the evidence dict the checklist consumes."""
     return {
-        "tracking": tracking,
+        "tracking": _merge_dispute_tracking(deal, tracking),
         "days_since_funding": days_since_funding,
         "authorized_cents": deal.terms.amount_cents,
         # From real deal state (DealManager.open_dispute), never a
         # constant — a hardcoded False here used to make the
         # checklist's dispute check unreachable through the product.
         "dispute_filed": deal.dispute_filed,
+        # Dispute-submitted evidence (src/disputes.py), carried so
+        # the checklist can read damage reports and settlement
+        # offers the same way it reads everything else.
+        "dispute_evidence": list(deal.dispute_evidence),
+        "buyer_confirmed": deal.buyer_confirmed_at is not None,
+        "receipt_confirmed_at": deal.buyer_confirmed_at,
         "seller_completion_rate": round(random.uniform(0.85, 1.0), 2),
         "messages": messages or [],
         "gathered_at": datetime.now(timezone.utc).isoformat(),

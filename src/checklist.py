@@ -67,9 +67,17 @@ def _delivered(deal: Deal, ev: dict) -> CheckResult:
         if expected and got is not None and got < expected:
             return CheckResult("delivered", CheckStatus.UNKNOWN,
                                f"partial delivery: {got} of {expected} "
-                               f"items delivered", 0.9)
+                               f"items delivered", 0.9,
+                               detail={"items_delivered": got,
+                                       "items_expected": expected})
         return CheckResult("delivered", CheckStatus.PASS,
                            f"delivered {t.get('delivered_at')}", 2.0)
+    if ev.get("buyer_confirmed"):
+        # No delivery scan, but the buyer — the recipient — says the
+        # item arrived. That is delivery evidence in its own right.
+        return CheckResult("delivered", CheckStatus.PASS,
+                           f"buyer confirmed receipt at "
+                           f"{ev.get('receipt_confirmed_at')}", 2.0)
     return CheckResult("delivered", CheckStatus.UNKNOWN, "no delivery scan", 0.5)
 
 
@@ -134,11 +142,48 @@ def _condition_clear(deal: Deal, ev: dict) -> CheckResult:
         if phrase in msgs:
             problems.append(f"buyer reports: '{phrase}'")
             break
+    # A buyer damage report submitted as dispute evidence is a
+    # condition problem the same way a buyer message is — and,
+    # unlike the dispute flag itself, it stays on the record after
+    # the dispute is resolved/closed.
+    for record in ev.get("dispute_evidence") or []:
+        if (record.get("party") == "buyer"
+                and record.get("kind") == "damage_report"):
+            problems.append(
+                f"buyer dispute evidence: "
+                f"{record.get('text') or 'damage reported via dispute'}")
     if problems:
         return CheckResult("condition_clear", CheckStatus.FAIL,
                            "; ".join(problems), 1.8)
     return CheckResult("condition_clear", CheckStatus.UNKNOWN,
                        "no condition report", 0.4)
+
+
+def _dispute_resolution(deal: Deal, ev: dict) -> CheckResult:
+    """An accepted settlement offer on an open dispute.
+
+    PASS carries the agreed split amount in ``detail`` so a Tier 0
+    rule can settle SPLIT directly off this result (that wiring
+    lives in the decision engine, not here). This check never
+    passes or fails on its own authority: with no open dispute, or
+    an open dispute with no buyer offer, it is UNKNOWN.
+    """
+    if not ev.get("dispute_filed", deal.dispute_filed):
+        return CheckResult("dispute_resolution", CheckStatus.UNKNOWN,
+                           "no open dispute", 1.0)
+    offers = [r for r in ev.get("dispute_evidence") or []
+              if r.get("party") == "buyer"
+              and r.get("kind") == "settlement_offer"]
+    if offers:
+        # Latest offer wins.
+        x = (offers[-1].get("data") or {}).get("split_release_cents")
+        return CheckResult(
+            "dispute_resolution", CheckStatus.PASS,
+            f"buyer accepts split settlement: release {x} of "
+            f"{deal.terms.amount_cents} cents to close the dispute",
+            1.0, detail={"split_release_cents": x})
+    return CheckResult("dispute_resolution", CheckStatus.UNKNOWN,
+                       "dispute open; no accepted settlement offer", 1.0)
 
 
 CHECKS: list[Check] = [
@@ -152,6 +197,7 @@ CHECKS: list[Check] = [
     Check("no_dispute", 0.7, _no_dispute),
     Check("seller_history", 0.6, _seller_history),
     Check("condition_clear", 0.4, _condition_clear),
+    Check("dispute_resolution", 1.0, _dispute_resolution),
 ]
 
 

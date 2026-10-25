@@ -34,6 +34,47 @@ tiered, and the tiers are ordered by how much each one has *earned* trust:
 Every decision — verdict, tier, evidence, reasoning, cost, and the shadow
 sensor's opinion — lands in an append-only audit log.
 
+## The full escrow lifecycle
+
+Adjudication is the middle of an escrow, not the whole of it. A deal here
+runs the whole ring, driven by the two parties rather than an operator:
+
+- **Terms before money.** A party proposes the deal (amount, item,
+  delivery ZIP, window); the counterparty accepts or declines on their
+  own page. Declined terms end the deal with no money moved; funding is
+  impossible until both parties have accepted.
+- **Buyer confirmation is a first-class release input.** The buyer can
+  confirm receipt on their deal page; a confirmed receipt releases at
+  Tier 0 alongside the checklist (the buyer is the address authority),
+  and counts as delivery evidence when tracking has no delivery scan.
+  Without confirmation, the evidence path stays authoritative.
+- **Split settlement.** Not every deal is all-or-nothing: a partial
+  shipment settles proportionally (capture the delivered fraction, void
+  the rest), and a dispute the buyer agrees to close for a partial
+  release settles at the agreed amount. Integer cents throughout;
+  the partial-capture-then-void shape was proven against the live
+  sandbox with PayPal read-backs for both legs.
+- **Disputes carry evidence, not just a flag.** Parties attach evidence
+  to an open dispute — seller tracking proof, buyer damage reports,
+  settlement offers — on a visible timeline. Submitted evidence feeds
+  the same checklist the carrier data does: a seller's pickup proof
+  can rescue a deal headed for a stall refund; a buyer's damage
+  report keeps a deal from releasing even after the dispute flag is
+  resolved.
+- **Party pages + notifications.** Each party gets their own deal page
+  (status timeline, what happens next, only the actions that party may
+  take — enforced server-side), distinct from the operator dashboard.
+  Every state change writes a per-party notice to an append-only
+  outbox, visible on the page.
+- **PayPal webhooks, polling fallback.** A webhook listener applies
+  `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`,
+  `PAYMENT.AUTHORIZATION.VOIDED`, and `PAYMENT.CAPTURE.COMPLETED`
+  events idempotently (an approval completes the funding it was
+  waiting on). The polling monitor remains the authoritative fallback
+  if an event is missed. Signature verification is required in
+  production and is deliberately not faked here — the sandbox listener
+  is exercised with PayPal-shaped fixture payloads.
+
 ## AI tools used
 
 - **Laya** (PyPI `laya`, checkpoint `convaiinnovations/laya/typed-decisions`)
@@ -50,16 +91,24 @@ sensor's opinion — lands in an append-only audit log.
 src/
   config.py          Environment-based configuration
   models.py          Deal, CheckResult, Decision dataclasses
+  deal_manager.py    The escrow state machine (two-party lifecycle)
   paypal_client.py   Sandbox client: authorize / capture / void
   checklist.py       The verification checklist array (the real IP)
   decision_engine.py Tiered adjudication (Tier 0 / shadow / Tier 2)
   laya_questions.py  The 8 atomic questions the forest answers
   laya_forest.py     Forest evaluation + shadow aggregation
   evidence.py        Evidence gatherers + scripted tracking simulator
+  disputes.py        Party-submitted dispute evidence + timeline
+  split_settlement.py Split execution: partial capture + void remainder
+  webhooks.py        PayPal webhook listener (idempotent; polling fallback)
+  notifications.py   Per-party notice outbox (append-only)
+  auth_expiry.py     Authorization aging: flag at 20d, escalate at 25d
   simulator.py       Demo harness: 3 scripted deals end-to-end
   audit.py           Append-only audit log of every decision
-  app.py             Dashboard (live feed, cost + shadow per decision)
-tests/               Unit tests (22)
+  app.py             Operator dashboard + buyer/seller deal pages
+tests/               204 tests: lifecycle, money path vs the live
+                     sandbox, split settlement, webhooks, disputes,
+                     party UI, golden corpus, hygiene + ladder gates
 ARCHITECTURE.md      Full design doc
 BUILD_PLAN.md        Week-by-week plan through Nov 12
 DEMO_SCRIPT.md       The 3-scenario demo, < 3 minutes
@@ -84,10 +133,13 @@ python -m pytest tests/                  # or run the test files directly
 
 ## Status
 
-Week 4 of 5. Escrow core, tiered decision engine, shadow sensor, simulator,
-and dashboard are built and tested end-to-end (all three scenarios produce
-the correct verdict at $0 total AI spend). Remaining: demo video and Devpost
-submission — see BUILD_PLAN.md.
+Week 4 of 5. The full lifecycle is built and tested end-to-end: two-party
+terms, funding, buyer confirmation, monitoring, disputes with party
+evidence, split settlement, webhooks, party pages and notifications —
+204 tests passing, one documented skip (the buyer-login approval leg,
+a PayPal platform constraint covered by a manual-mode test). All three
+demo scenarios produce the correct verdict at $0 total AI spend.
+Remaining: demo video and Devpost submission — see BUILD_PLAN.md.
 
 ## Limitations — stated plainly
 
