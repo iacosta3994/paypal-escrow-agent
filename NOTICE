@@ -1,0 +1,31 @@
+paypal-escrow-agent
+Copyright 2026 Brian Acosta
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party dependencies
+------------------------
+This project is not distributed with its dependencies bundled; they are
+installed from PyPI per requirements.txt and remain under their own
+licenses. Licenses below were verified from the packages' published
+metadata on 2026-10-24.
+
+  laya 0.4.14            Apache License 2.0
+  requests               Apache License 2.0
+  Flask                  BSD 3-Clause
+  Werkzeug               BSD 3-Clause
+  Click                  BSD 3-Clause
+  Jinja2                 BSD 3-Clause
+  MarkupSafe             BSD 3-Clause
+  itsdangerous           BSD 3-Clause
+  idna                   BSD 3-Clause
+  python-dotenv          BSD 3-Clause
+  urllib3                MIT
+  charset-normalizer     MIT
+  certifi                MPL 2.0 (CA certificate bundle data; not vendored)
+
+Optional, lazily imported AI SDKs listed in requirements.txt (openai,
+anthropic) are permissively licensed (Apache License 2.0 / MIT) and are
+not required for the deterministic core.
+
+No copyleft (GPL/AGPL/LGPL) components are used.
