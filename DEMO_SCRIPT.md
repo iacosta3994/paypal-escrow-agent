@@ -4,6 +4,9 @@ Thesis: **AI you can trust with money, because it shows its work.**
 
 ## Scenario 1 — Clean release (the happy path)
 - Deal: $500 used camera, buyer + seller, release on delivery confirmation.
+- Funding pauses at AWAITING_APPROVAL: PayPal has no API to approve as
+  the buyer, so the buyer approves on PayPal's own page — a human
+  authorizes every hold; say so out loud, it's a trust beat, not a gap.
 - PayPal authorization locks $500 (show the hold on screen).
 - Simulated tracking: label created → picked up → in transit → delivered,
   ZIP matches.

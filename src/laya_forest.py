@@ -18,8 +18,15 @@ Layer 1 — trees (sensors). The questions are canonical in
   - condition: condition free of reported damage? dispute filed?
   - risk: shipped? still within the window? amount matched?
     seller's completion history good?
+  Coverage (2026-10-24 audit, revised on ladder evidence): every
+  decisive fact is read by a model tree AND by the aggregator's
+  deterministic release audit — see src/laya_questions.py for why
+  the second reader is code, not another model.
 Layer 2 — deterministic aggregation (aggregate()): each tree casts one
-  vote from its answers; majority wins, no majority -> INVESTIGATE.
+  vote from its answers; a release audit then downgrades any RELEASE
+  vote contradicted by a known-bad decisive fact in the union of the
+  trees' ground-truth facts; majority wins, no majority ->
+  INVESTIGATE.
   The old model meta-decider was REMOVED 2026-10-23 (Ian: Laya answers
   atomic questions only — a verdict is not an atomic question, so the
   model is never asked one, not even behind a flag).
@@ -141,30 +148,70 @@ def _tree_vote(tree: str, answers: dict) -> Verdict:
     return Verdict.INVESTIGATE
 
 
+# RELEASE AUDIT (coverage audit, 2026-10-24 — see laya_questions):
+# the deterministic second reader of every decisive fact. Fact ->
+# the value that forbids a release. SELLER_HISTORY_GOOD is absent by
+# design: non-decisive, and the risk tree already reads it itself.
+RELEASE_AUDIT: tuple[tuple[str, str], ...] = (
+    ("SHIPPED", "no"), ("DELIVERED", "no"), ("ADDRESS_MATCH", "no"),
+    ("WITHIN_WINDOW", "no"), ("CONDITION_OK", "no"),
+    ("BUYER_COMPLAINT", "yes"), ("AMOUNT_MATCH", "no"),
+)
+
+
+def _release_audit(votes: dict, tree_outputs: list[dict]) -> list[str]:
+    """Downgrade RELEASE votes contradicted by known-bad decisive
+    facts. The trees each see only their own facts; the union across
+    outputs (all derived from one build_state in production) is the
+    whole case. A tree may vote RELEASE from its angle while a fact
+    outside its angle forbids release — the audit is the reader of
+    last resort. UNKNOWN facts never veto; outputs without "_facts"
+    (legacy fixtures) skip the audit. Returns the vetoed tree names.
+    """
+    union: dict = {}
+    for t in tree_outputs:
+        if t.get("_facts"):
+            union.update(t["_facts"])
+    bad = [fact for fact, value in RELEASE_AUDIT
+           if union.get(fact) == value]
+    if not bad:
+        return []
+    vetoed = []
+    for tree, vote in votes.items():
+        if vote == Verdict.RELEASE:
+            votes[tree] = Verdict.INVESTIGATE
+            vetoed.append(tree)
+    return vetoed
+
+
 def aggregate(tree_outputs: list[dict]) -> dict:
     """Deterministic aggregation of the trees' answers.
 
     Replaces the model meta-decider as the verdict path. Each tree casts
     one vote (_tree_vote, with fact-certainty gating: a vote may not
-    rest on a guessed answer to an UNKNOWN fact); a majority (>= 2 of
-    3) wins, a three-way split is INVESTIGATE. Confidence is the
-    tree-agreement fraction — the share of trees backing the verdict —
-    replacing the old hard-coded 0.7.
+    rest on a guessed answer to an UNKNOWN fact); the release audit
+    then downgrades any RELEASE vote a known-bad decisive fact
+    contradicts; a majority (>= 2 of 3) wins, a three-way split is
+    INVESTIGATE. Confidence is the tree-agreement fraction — the
+    share of trees backing the verdict — replacing the old
+    hard-coded 0.7.
 
     Returns {"verdict": Verdict, "confidence": float,
-             "votes": {tree_name: Verdict}}.
+             "votes": {tree_name: Verdict},
+             "release_vetoed": [tree, ...]}.
     """
     votes = {t["tree"]: _tree_vote(t["tree"], t) for t in tree_outputs}
     if not votes:
         return {"verdict": Verdict.INVESTIGATE, "confidence": 0.0,
-                "votes": votes}
+                "votes": votes, "release_vetoed": []}
+    vetoed = _release_audit(votes, tree_outputs)
     counts = Counter(votes.values())
     verdict, top = counts.most_common(1)[0]
     if top < 2:  # no majority: every tree leaned a different way
         verdict = Verdict.INVESTIGATE
         top = counts[Verdict.INVESTIGATE]
     return {"verdict": verdict, "confidence": round(top / len(votes), 4),
-            "votes": votes}
+            "votes": votes, "release_vetoed": vetoed}
 
 
 class ShadowResult(NamedTuple):

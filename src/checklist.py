@@ -58,6 +58,16 @@ def _in_transit_progressing(deal: Deal, ev: dict) -> CheckResult:
 def _delivered(deal: Deal, ev: dict) -> CheckResult:
     t = ev.get("tracking", {})
     if t.get("delivered"):
+        # Partial shipment: a delivery scan for SOME of the items is
+        # not delivery of the deal. UNKNOWN (not PASS, not FAIL): the
+        # remainder may still be in transit, so the case investigates
+        # instead of releasing the full amount or refunding it.
+        expected = t.get("items_expected")
+        got = t.get("items_delivered")
+        if expected and got is not None and got < expected:
+            return CheckResult("delivered", CheckStatus.UNKNOWN,
+                               f"partial delivery: {got} of {expected} "
+                               f"items delivered", 0.9)
         return CheckResult("delivered", CheckStatus.PASS,
                            f"delivered {t.get('delivered_at')}", 2.0)
     return CheckResult("delivered", CheckStatus.UNKNOWN, "no delivery scan", 0.5)

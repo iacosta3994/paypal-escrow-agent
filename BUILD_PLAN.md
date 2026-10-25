@@ -3,6 +3,27 @@
 Submission deadline: **Nov 12, 2026, 12:00pm PT** (2pm CT). Target internal
 freeze Nov 10 for buffer.
 
+Improvement plan (2026-10-24): `goals/paypal-hackathon-escrow-agent/files/improvement-plan-2026-10-24.md`
+— Must/Should/Stretch from here to the freeze, incl. the buyer-approval
+skip decision (Oct 30 deadline) and the Nov 9 regression gate.
+
+## Regression gates
+
+Two gates guard the build; both must pass before the Nov 10 freeze.
+
+1. **Test suite** (every change):
+   `~/laya-scratch-venv/bin/python -m pytest tests/` — verdict fixtures,
+   state-block hygiene gate, tree-coverage + both-NO guard, messy
+   golden corpus, authorization-expiry surfacing, and the live
+   sandbox money path.
+2. **Complexity ladder** (MANDATORY on any change to
+   `src/laya_questions.py` or `src/laya_forest.py`):
+   `~/laya-scratch-venv/bin/python scripts/ladder_gate.py` — pooled
+   per-question accuracy on determinate facts must not regress below
+   the 2026-10-23 baseline of 94.7% (540/570; the denominator grows
+   as tree coverage grows). Kept out of pytest on purpose: it runs
+   live inference for minutes. The Nov 9 regression gate runs both.
+
 ## Week 1 — Foundation (Oct 8–14)
 - [x] PayPal developer account + sandbox app (client ID/secret)
 - [x] `paypal_client.py`: authorize, capture, void against sandbox — tested live
