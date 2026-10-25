@@ -1,0 +1,12 @@
+[
+ {"id":"train_module","kind":"file_exists","weight":1,"target":"train.py","description":"README Train: trained using train.py"},
+ {"id":"train_main","kind":"symbol_exists","weight":1,"target":"train.py:main","description":"train.py entry point"},
+ {"id":"autonomous_module","kind":"file_exists","weight":1,"target":"autonomous.py","description":"README Run: run autonomously using autonomous.py"},
+ {"id":"autonomous_control","kind":"symbol_exists","weight":1,"target":"autonomous.py:autonomous_control","description":"autonomous driving control loop"},
+ {"id":"motor_driver","kind":"file_exists","weight":1,"target":"helpers/motor_driver.py","description":"README: Raspberry Pi controls DC motors via L293D"},
+ {"id":"predictor","kind":"symbol_exists","weight":1,"target":"predict.py:Predictor","description":"neural-network prediction of steering labels"},
+ {"id":"readme_train_section","kind":"readme_section","weight":1,"target":"Train","description":"README Train section"},
+ {"id":"nn_speed_control","kind":"symbol_exists","weight":1,"target":"autonomous.py:neural_speed_control","description":"Planned: Control speed of the car using neural networks"},
+ {"id":"stop_signal_detection","kind":"symbol_exists","weight":1,"target":"predict.py:detect_stop_signal","description":"Planned: Stop signal detection"},
+ {"id":"obstacle_detection","kind":"symbol_exists","weight":1,"target":"predict.py:detect_obstacles","description":"Planned: Obstacle detection"}
+]

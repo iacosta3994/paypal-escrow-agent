@@ -1,0 +1,9 @@
+[
+ {"id":"parser_script","kind":"file_exists","weight":2,"target":"bin/mclp","description":"the mclp parser script (implements the one Current Feature: total time played)"},
+ {"id":"setup_py","kind":"file_exists","weight":1,"target":"setup.py","description":"README: pip install mclp"},
+ {"id":"readme_install","kind":"readme_section","weight":1,"target":"Installation","description":"README Installation/Usage section"},
+ {"id":"death_counts","kind":"symbol_exists","weight":2,"target":"bin/mclp:count_deaths","description":"Planned: Generate death counts"},
+ {"id":"html_summary","kind":"symbol_exists","weight":2,"target":"bin/mclp:generate_html_summary","description":"Planned: Generate an HTML summary"},
+ {"id":"server_errors","kind":"symbol_exists","weight":1,"target":"bin/mclp:server_errors","description":"Planned: Server errors"},
+ {"id":"first_join_playtime","kind":"symbol_exists","weight":1,"target":"bin/mclp:playtime_since_first_join","description":"Planned: play times based on time since first joined"}
+]

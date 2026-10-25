@@ -8,16 +8,18 @@ gather.
 from dataclasses import dataclass
 
 from .models import CheckResult, CheckStatus, Deal
+from .policy import DEFAULT_POLICY, Policy
 
 
 @dataclass
 class Check:
     name: str
     weight: float
-    run: callable  # (deal, evidence) -> CheckResult
+    run: callable  # (deal, evidence, policy) -> CheckResult
 
 
-def _tracking_exists(deal: Deal, ev: dict) -> CheckResult:
+def _tracking_exists(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     t = ev.get("tracking")
     if t and t.get("number"):
         return CheckResult("tracking_exists", CheckStatus.PASS,
@@ -26,7 +28,8 @@ def _tracking_exists(deal: Deal, ev: dict) -> CheckResult:
                        "no tracking number provided", 1.0)
 
 
-def _pickup_confirmed(deal: Deal, ev: dict) -> CheckResult:
+def _pickup_confirmed(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     t = ev.get("tracking", {})
     if t.get("pickup_scan"):
         return CheckResult("pickup_confirmed", CheckStatus.PASS,
@@ -34,7 +37,7 @@ def _pickup_confirmed(deal: Deal, ev: dict) -> CheckResult:
     if t.get("number"):
         # A fresh label with no pickup scan isn't proof of non-shipment;
         # only a stalled label is a hard fail.
-        if t.get("stalled_days", 0) >= 5:
+        if t.get("stalled_days", 0) >= policy.stall_days:
             return CheckResult("pickup_confirmed", CheckStatus.FAIL,
                                f"label created, no pickup in "
                                f"{t['stalled_days']} days", 1.5)
@@ -44,9 +47,10 @@ def _pickup_confirmed(deal: Deal, ev: dict) -> CheckResult:
                        "no tracking data", 0.5)
 
 
-def _in_transit_progressing(deal: Deal, ev: dict) -> CheckResult:
+def _in_transit_progressing(deal: Deal, ev: dict,
+                            policy: Policy = DEFAULT_POLICY) -> CheckResult:
     t = ev.get("tracking", {})
-    if t.get("stalled_days", 0) >= 5:
+    if t.get("stalled_days", 0) >= policy.stall_days:
         return CheckResult("in_transit", CheckStatus.FAIL,
                            f"no scan in {t['stalled_days']} days", 1.3)
     if t.get("in_transit"):
@@ -55,7 +59,8 @@ def _in_transit_progressing(deal: Deal, ev: dict) -> CheckResult:
     return CheckResult("in_transit", CheckStatus.UNKNOWN, "no transit data", 0.5)
 
 
-def _delivered(deal: Deal, ev: dict) -> CheckResult:
+def _delivered(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     t = ev.get("tracking", {})
     if t.get("delivered"):
         # Partial shipment: a delivery scan for SOME of the items is
@@ -81,7 +86,8 @@ def _delivered(deal: Deal, ev: dict) -> CheckResult:
     return CheckResult("delivered", CheckStatus.UNKNOWN, "no delivery scan", 0.5)
 
 
-def _address_match(deal: Deal, ev: dict) -> CheckResult:
+def _address_match(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     t = ev.get("tracking", {})
     if t.get("delivered_zip") == deal.terms.delivery_zip:
         return CheckResult("address_match", CheckStatus.PASS,
@@ -94,7 +100,8 @@ def _address_match(deal: Deal, ev: dict) -> CheckResult:
                        "no delivery ZIP", 0.5)
 
 
-def _within_window(deal: Deal, ev: dict) -> CheckResult:
+def _within_window(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     days = ev.get("days_since_funding", 0)
     if days <= deal.terms.window_days:
         return CheckResult("within_window", CheckStatus.PASS,
@@ -104,7 +111,8 @@ def _within_window(deal: Deal, ev: dict) -> CheckResult:
                        1.4)
 
 
-def _amount_match(deal: Deal, ev: dict) -> CheckResult:
+def _amount_match(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     if ev.get("authorized_cents") == deal.terms.amount_cents:
         return CheckResult("amount_match", CheckStatus.PASS,
                            "authorized == deal amount", 1.0)
@@ -112,26 +120,29 @@ def _amount_match(deal: Deal, ev: dict) -> CheckResult:
                        "authorized != deal amount", 1.6)
 
 
-def _no_dispute(deal: Deal, ev: dict) -> CheckResult:
+def _no_dispute(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     if ev.get("dispute_filed"):
         return CheckResult("no_dispute", CheckStatus.FAIL,
                            "dispute filed by a party", 1.7)
     return CheckResult("no_dispute", CheckStatus.PASS, "no disputes", 0.7)
 
 
-def _seller_history(deal: Deal, ev: dict) -> CheckResult:
+def _seller_history(deal: Deal, ev: dict,
+                    policy: Policy = DEFAULT_POLICY) -> CheckResult:
     rate = ev.get("seller_completion_rate")
     if rate is None:
         return CheckResult("seller_history", CheckStatus.UNKNOWN,
                            "no history", 0.4)
-    if rate >= 0.9:
+    if rate >= policy.seller_completion_threshold:
         return CheckResult("seller_history", CheckStatus.PASS,
                            f"{rate:.0%} prior completion", 0.6)
     return CheckResult("seller_history", CheckStatus.FAIL,
                        f"{rate:.0%} prior completion", 1.0)
 
 
-def _condition_clear(deal: Deal, ev: dict) -> CheckResult:
+def _condition_clear(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     t = ev.get("tracking", {})
     msgs = " ".join(ev.get("messages", [])).lower()
     problems = []
@@ -159,7 +170,8 @@ def _condition_clear(deal: Deal, ev: dict) -> CheckResult:
                        "no condition report", 0.4)
 
 
-def _dispute_resolution(deal: Deal, ev: dict) -> CheckResult:
+def _dispute_resolution(deal: Deal, ev: dict,
+                      policy: Policy = DEFAULT_POLICY) -> CheckResult:
     """An accepted settlement offer on an open dispute.
 
     PASS carries the agreed split amount in ``detail`` so a Tier 0
@@ -201,6 +213,14 @@ CHECKS: list[Check] = [
 ]
 
 
-def run_checklist(deal: Deal, evidence: dict) -> list[CheckResult]:
-    """Run every check against the deal + gathered evidence."""
-    return [c.run(deal, evidence) for c in CHECKS]
+def run_checklist(deal: Deal, evidence: dict,
+                  policy: Policy | None = None) -> list[CheckResult]:
+    """Run every check against the deal + gathered evidence.
+
+    Every check takes (deal, evidence, policy); only the checks
+    whose thresholds are operator policy (stall days, seller
+    completion rate) read it — see src/policy.py. DEFAULT_POLICY
+    reproduces the old literals.
+    """
+    policy = policy or DEFAULT_POLICY
+    return [c.run(deal, evidence, policy) for c in CHECKS]
