@@ -189,3 +189,11 @@ PayPal's sanctioned server-side card flow, and the buyer-approval
 leg is covered by a manual-mode test (a human clicks approve; the
 suite polls, completes, and verifies) rather than pretending the
 step doesn't exist.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE). Copyright 2026 Brian Acosta.
+Third-party dependency licenses are inventoried in [NOTICE](NOTICE);
+the project's own dependencies are permissive (Apache 2.0 / BSD / MIT —
+laya, the Tier 1 sensor library, is itself Apache 2.0), with no copyleft
+components.
