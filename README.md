@@ -147,8 +147,9 @@ splits at its measured completion fraction, or refunds like any other
 deal. Post-settlement outcomes can now be recorded against decisions
 (`src/outcomes.py`), so verdicts accumulate labels.
 
-367 tests passing, one documented skip (the buyer-login approval leg,
-a PayPal platform constraint covered by a manual-mode test). The
+368 tests passing, zero skips — the full suite ran green on
+2026-10-25, including the buyer-approval leg, verified end-to-end in
+manual mode against a live sandbox buyer session (see Limitations). The
 regression corpus grew from 11 to 83 golden cases via an adversarial
 generator; its screening caught a real bug — partial splits could
 release on an unverified delivery address — now fixed and guarded.
@@ -205,7 +206,12 @@ The end-to-end suite therefore funds its automated legs with
 PayPal's sanctioned server-side card flow, and the buyer-approval
 leg is covered by a manual-mode test (a human clicks approve; the
 suite polls, completes, and verifies) rather than pretending the
-step doesn't exist.
+step doesn't exist. Scripted buyer-login automation is blocked by
+PayPal's own sign-in captcha (the credentialed POST is refused), so
+manual mode is the verified path: on 2026-10-25 the full suite ran
+368 passed / 0 failed / 0 skipped with approvals clicked in a live
+sandbox buyer session — order approved, authorization CREATED for
+the full amount, then voided by the test as cleanup.
 
 ## License
 
