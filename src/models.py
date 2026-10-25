@@ -7,6 +7,7 @@ from typing import Any
 
 class DealState(str, Enum):
     PROPOSED = "proposed"
+    AWAITING_APPROVAL = "awaiting_approval"  # order created; buyer must approve
     FUNDED = "funded"          # PayPal authorization holds the money
     MONITORING = "monitoring"
     DECIDED = "decided"
@@ -46,6 +47,8 @@ class Deal:
     state: DealState = DealState.PROPOSED
     paypal_order_id: str | None = None
     paypal_auth_id: str | None = None
+    paypal_approve_url: str | None = None  # buyer approval link, when pending
+    dispute_filed: bool = False  # a party has an open dispute on this deal
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )

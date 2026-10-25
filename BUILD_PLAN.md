@@ -53,6 +53,21 @@ freeze Nov 10 for buffer.
       clean → RELEASE day 3, never-ships → REFUND day 6, ambiguous →
       INVESTIGATE throughout; shadow fields populated on every tier-1
       decision; total AI spend $0.00)
+- [x] E2E test suite with REAL sandbox money movement (2026-10-24,
+      `tests/test_sandbox_money_path.py` + `test_not_ready_live.py` +
+      `test_settle_guard.py` + `test_dispute_wiring.py` +
+      `test_idempotency.py`; run: `~/laya-scratch-venv/bin/python -m
+      pytest tests/`). 39 passed, 1 skipped: real card-funded orders
+      authorize/capture/void on PayPal's sandbox asserted from
+      PayPal-side state; not-ready cases hold; settle() is guarded;
+      disputes wired from real deal state. The one skip is the
+      buyer-login approval completion — PayPal has no approval API and
+      the project env holds no sandbox buyer credentials (activates
+      with PAYPAL_SANDBOX_BUYER_EMAIL/PASSWORD or
+      ESCROW_TEST_MANUAL_APPROVAL=1). This closed the four gaps the
+      2026-10-24 verification found: approval unwired, authorization
+      id dropped in fund(), unguarded settle(), hardcoded
+      dispute_filed=False.
 
 ## Week 5 — Submission (Nov 5–12)
 - [ ] Demo video (< 3 min, YouTube, public)

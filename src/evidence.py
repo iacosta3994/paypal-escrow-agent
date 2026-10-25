@@ -61,7 +61,10 @@ def gather_evidence(deal: Deal, tracking: dict,
         "tracking": tracking,
         "days_since_funding": days_since_funding,
         "authorized_cents": deal.terms.amount_cents,
-        "dispute_filed": False,
+        # From real deal state (DealManager.open_dispute), never a
+        # constant — a hardcoded False here used to make the
+        # checklist's dispute check unreachable through the product.
+        "dispute_filed": deal.dispute_filed,
         "seller_completion_rate": round(random.uniform(0.85, 1.0), 2),
         "messages": messages or [],
         "gathered_at": datetime.now(timezone.utc).isoformat(),
