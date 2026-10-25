@@ -11,12 +11,32 @@ back to the buyer. Monitoring runs the checklist + decision engine on
 gathered evidence.
 """
 import uuid
+from datetime import datetime, timezone
 
-from . import audit, paypal_client
+from . import audit, auth_expiry, paypal_client
 from .checklist import run_checklist
 from .decision_engine import adjudicate
 from .evidence import gather_evidence
-from .models import Deal, DealState, DealTerms, Verdict
+from .models import Deal, DealState, DealTerms, Decision, Verdict
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _stamp_authorization(deal: Deal) -> None:
+    """Record when the hold was placed, and read PayPal's own
+    created/expires timestamps back onto the deal (best effort: the
+    authorization object is the source of truth for its expiry, and
+    expiry surfacing falls back to funded_at when the read fails)."""
+    deal.funded_at = _now_iso()
+    if deal.paypal_auth_id:
+        try:
+            auth = paypal_client.get_authorization(deal.paypal_auth_id)
+        except Exception:
+            return
+        deal.paypal_auth_created_at = auth.get("create_time")
+        deal.paypal_auth_expires_at = auth.get("expiration_time")
 
 
 class DealManager:
@@ -52,7 +72,10 @@ class DealManager:
             deal.paypal_auth_id = auth.get("authorization_id")
             deal.state = (DealState.FUNDED if deal.paypal_auth_id
                           else DealState.AWAITING_APPROVAL)
+            if deal.paypal_auth_id:
+                _stamp_authorization(deal)
         else:
+            deal.funded_at = _now_iso()
             deal.state = DealState.FUNDED
         return deal
 
@@ -65,6 +88,7 @@ class DealManager:
         """
         if not self.use_paypal:
             if deal.state == DealState.AWAITING_APPROVAL:
+                deal.funded_at = _now_iso()
                 deal.state = DealState.FUNDED
             return deal
         if deal.state != DealState.AWAITING_APPROVAL:
@@ -72,6 +96,7 @@ class DealManager:
                 f"cannot complete funding in state {deal.state}")
         auth = paypal_client.authorize_order(deal.paypal_order_id)
         deal.paypal_auth_id = auth["authorization_id"]
+        _stamp_authorization(deal)
         deal.state = DealState.FUNDED
         return deal
 
@@ -86,10 +111,56 @@ class DealManager:
         deal.dispute_filed = False
         return deal
 
+    def check_auth_expiry(self, deal: Deal,
+                          now: datetime | None = None) -> dict | None:
+        """Surface an aging authorization (see src/auth_expiry.py):
+        WARN at 20 days records an audit flag; ESCALATE/EXPIRED at
+        25/29 records an audit escalation and escalates the deal.
+        Each level is recorded once per deal. Returns the status."""
+        status = auth_expiry.expiry_status(deal, now)
+        if status is None or status["level"] == "ok":
+            return status
+        age = status["age_days"]
+        left = status["days_left"]
+        if status["level"] == "warn" and not deal.auth_expiry_warned:
+            deal.auth_expiry_warned = True
+            audit.record(Decision(
+                deal_id=deal.id, verdict=Verdict.INVESTIGATE,
+                confidence=0.0,
+                reasoning=f"Authorization aging: the held funds' "
+                          f"authorization is {age} days old with "
+                          f"~{left} days before it expires "
+                          f"(29-day limit). Re-authorize or escalate "
+                          f"before it lapses.",
+                key_evidence=[f"authorization age: {age} days",
+                              f"days to expiry: ~{left}"],
+                tier=0, cost_usd=0.0))
+        elif (status["level"] in ("escalate", "expired")
+              and not deal.auth_expiry_escalated):
+            deal.auth_expiry_warned = True
+            deal.auth_expiry_escalated = True
+            audit.record(Decision(
+                deal_id=deal.id, verdict=Verdict.INVESTIGATE,
+                confidence=0.0,
+                reasoning=f"Authorization expiry "
+                          f"{'has passed' if status['level'] == 'expired' else 'imminent'}: "
+                          f"authorization is {age} days old, "
+                          f"~{left} days left. Escalated to humans: "
+                          f"re-authorize or settle now — an expired "
+                          f"authorization leaves nothing to capture "
+                          f"or void.",
+                key_evidence=[f"authorization age: {age} days",
+                              f"days to expiry: ~{left}"],
+                tier=0, cost_usd=0.0))
+            deal.state = DealState.ESCALATED
+        return status
+
     def monitor(self, deal: Deal, tracking: dict,
                 days_since_funding: int,
-                messages: list[str] | None = None):
-        """Run one monitoring pass: gather evidence, checklist, adjudicate."""
+                messages: list[str] | None = None,
+                now: datetime | None = None):
+        """Run one monitoring pass: gather evidence, checklist,
+        adjudicate — then surface authorization aging (S5)."""
         if deal.state not in (DealState.FUNDED, DealState.MONITORING):
             raise ValueError(f"cannot monitor deal in state {deal.state}")
         deal.state = DealState.MONITORING
@@ -98,6 +169,7 @@ class DealManager:
         results = run_checklist(deal, evidence)
         decision = adjudicate(deal, results)
         audit.record(decision)
+        self.check_auth_expiry(deal, now)
         return decision, results
 
     def settle(self, deal: Deal, decision) -> Deal:
@@ -136,7 +208,10 @@ class DealManager:
             self._inconclusive = getattr(self, "_inconclusive", {})
             n = self._inconclusive.get(deal.id, 0) + 1
             self._inconclusive[deal.id] = n
-            deal.state = (DealState.ESCALATED if n >= 3
+            # An expiry escalation (auth_expiry) is sticky: an
+            # inconclusive adjudication must not resurrect it.
+            deal.state = (DealState.ESCALATED
+                          if n >= 3 or deal.state == DealState.ESCALATED
                           else DealState.MONITORING)
         return deal
 

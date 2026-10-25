@@ -88,3 +88,52 @@ Week 4 of 5. Escrow core, tiered decision engine, shadow sensor, simulator,
 and dashboard are built and tested end-to-end (all three scenarios produce
 the correct verdict at $0 total AI spend). Remaining: demo video and Devpost
 submission — see BUILD_PLAN.md.
+
+## Limitations — stated plainly
+
+**The money rail is a card hold, not production escrow.** What this
+build does is a plain PayPal Orders v2 authorize/capture: the
+buyer's card is authorized for the full amount and that authorization
+is the "hold." PayPal fully honors an authorization for about 3
+days; it expires at 29. The seller is paid by capturing the
+authorization, the buyer is refunded by voiding it. That is a real
+hold, but it is not how a production escrow platform settles:
+production would capture the funds into the platform's account at
+funding time and disburse with the Payouts API on release (refunding
+the capture if the deal fails), which needs PayPal partner/escrow
+arrangements and licensing this hackathon build doesn't have. The
+adjudication core is deliberately rail-agnostic — checklist, tiers,
+audit trail — so swapping the rail doesn't touch the judgment.
+Authorization aging is surfaced, not silent: monitoring flags a
+hold in the audit feed at 20 days and escalates it at 25, before
+the 29-day expiry can quietly empty the escrow.
+
+**Laya's blind spots are measured, not hypothetical.** On the
+complexity ladder (22 cases, hostile inputs, three models per case):
+the forest degrades with mixed-valence facts — when SHIPPED and
+WITHIN_WINDOW are both NO it still draws YES answers in every
+phrasing tried, so read on answers alone it can be fooled toward
+release; raw numeric detail lines in its input (warehouse temps,
+ticket counts) contaminate it at *any* size — presence, not
+magnitude; and where a fact is genuinely UNKNOWN its forced guesses
+lean YES roughly 9:3. Each blind spot has a named containment:
+Tier 0 owns every hard fail (both-NO is a Tier 0 refund before the
+forest is consulted), a hygiene-gate test pins the forest's input
+to canonical atomic fact lines so numeric contamination can't creep
+back in, fact-certainty gating means a guessed YES can never carry
+a release vote, and the forest's verdict is shadow-logged only — it
+can flag, it can never move money.
+
+**The accuracy corpus is self-authored.** The fixtures, ladder
+cases, and golden corpus (partial shipments, ZIP typos, carrier
+exception strings, cent-level mismatches) are realistic but ours.
+100% on our own cases is not a claim about the world; it's a claim
+that the guardrails hold on the cases we could think of.
+
+**Buyer approval cannot be automated.** PayPal offers no API to
+approve an order as the buyer — approval is a human at a web page.
+The end-to-end suite therefore funds its automated legs with
+PayPal's sanctioned server-side card flow, and the buyer-approval
+leg is covered by a manual-mode test (a human clicks approve; the
+suite polls, completes, and verifies) rather than pretending the
+step doesn't exist.

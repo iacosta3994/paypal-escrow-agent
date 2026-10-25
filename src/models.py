@@ -49,6 +49,15 @@ class Deal:
     paypal_auth_id: str | None = None
     paypal_approve_url: str | None = None  # buyer approval link, when pending
     dispute_filed: bool = False  # a party has an open dispute on this deal
+    # Authorization aging (S5): when the money was held, and — read
+    # back from PayPal's authorization object when available — when
+    # the hold was created and when it expires. PayPal fully honors
+    # an authorization ~3 days and it expires at 29; see auth_expiry.
+    funded_at: str | None = None
+    paypal_auth_created_at: str | None = None
+    paypal_auth_expires_at: str | None = None
+    auth_expiry_warned: bool = False     # 20-day flag already recorded
+    auth_expiry_escalated: bool = False  # 25-day escalation already done
     created_at: str = field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
