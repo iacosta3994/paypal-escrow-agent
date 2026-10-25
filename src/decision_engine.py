@@ -22,6 +22,7 @@ import os
 
 from . import config
 from .models import CheckResult, CheckStatus, Deal, Decision, Verdict
+from .policy import DEFAULT_POLICY, Policy
 
 # Hard-fail check names: any FAIL here short-circuits to REFUND, no model.
 _HARD_FAILS = {"pickup_confirmed", "within_window", "amount_match"}
@@ -117,9 +118,10 @@ def _tier0(deal: Deal, results: list[CheckResult]) -> Decision | None:
             )
     # Partial shipment: some items verifiably delivered, the rest
     # not — and every other decisive fact is known-good (amount
-    # matches, no dispute, condition not failed; hard fails already
-    # returned above). Settle proportionally instead of parking the
-    # whole amount: capture the delivered fraction, void the rest.
+    # matches, no dispute, condition not failed, delivery address
+    # verified; hard fails already returned above). Settle
+    # proportionally instead of parking the whole amount: capture
+    # the delivered fraction, void the rest.
     delivered = by_name.get("delivered")
     if (delivered and delivered.status == CheckStatus.UNKNOWN
             and "items_expected" in delivered.detail
@@ -128,11 +130,24 @@ def _tier0(deal: Deal, results: list[CheckResult]) -> Decision | None:
         expected = delivered.detail["items_expected"]
         amount_r = by_name.get("amount_match")
         dispute_r = by_name.get("no_dispute")
+        addr_r = by_name.get("address_match")
         cond = by_name.get("condition_clear")
+        # Address guard (A5 corpus finding, 2026-10-24): a partial
+        # split pays the seller for items said to be delivered —
+        # the delivery address must be verified first. A wrong ZIP
+        # (FAIL) or no recorded delivered ZIP (UNKNOWN) means the
+        # fraction may have gone to the wrong place: fall through
+        # to INVESTIGATE, never split. Sole exception: a buyer who
+        # confirmed receipt is the address authority (the same
+        # principle as the confirmation rule above).
+        addr_ok = (addr_r is not None
+                   and addr_r.status == CheckStatus.PASS) \
+            or deal.buyer_confirmed_at is not None
         if (isinstance(got, int) and isinstance(expected, int)
                 and 0 < got < expected
                 and amount_r and amount_r.status == CheckStatus.PASS
                 and dispute_r and dispute_r.status == CheckStatus.PASS
+                and addr_ok
                 and not (cond and cond.status == CheckStatus.FAIL)):
             split = (deal.terms.amount_cents * got) // expected
             if 0 < split < deal.terms.amount_cents:
@@ -198,13 +213,14 @@ checklist of verification results, return a JSON verdict. Rules:
 - RELEASE only if delivery/condition evidence is solid.
 - REFUND if the seller failed to perform (no shipment, window blown).
 - INVESTIGATE if evidence conflicts or is too thin to decide — never guess.
-- Confidence below 0.75 must be INVESTIGATE.
+- Confidence below {tier2_min_confidence} must be INVESTIGATE.
 Respond with JSON only: {"verdict": "RELEASE|REFUND|INVESTIGATE",
 "confidence": 0.0-1.0, "reasoning": "...", "key_evidence": [...],
 "recommended_action": "..."}"""
 
 
-def _tier2_grok(deal: Deal, results: list[CheckResult]) -> Decision:
+def _tier2_grok(deal: Deal, results: list[CheckResult],
+                policy: Policy = DEFAULT_POLICY) -> Decision:
     """Grok via xAI's OpenAI-compatible API. Only for hard cases."""
     import openai
 
@@ -222,13 +238,17 @@ def _tier2_grok(deal: Deal, results: list[CheckResult]) -> Decision:
             f"Checklist:\n{checklist_text}")
     resp = client.chat.completions.create(
         model=config.LLM_TIER2_MODEL, max_tokens=500,
-        messages=[{"role": "system", "content": _GROK_SYSTEM},
+        # (replace, not .format: the prompt contains literal JSON braces)
+        messages=[{"role": "system", "content": _GROK_SYSTEM.replace(
+                      "{tier2_min_confidence}",
+                      str(policy.tier2_min_confidence))},
                   {"role": "user", "content": user}],
     )
     raw = resp.choices[0].message.content or "{}"
     parsed = json.loads(raw[raw.index("{"):raw.rindex("}") + 1])
     verdict = Verdict(parsed["verdict"].lower())
-    if parsed.get("confidence", 1.0) < 0.75 and verdict != Verdict.INVESTIGATE:
+    if (parsed.get("confidence", 1.0) < policy.tier2_min_confidence
+            and verdict != Verdict.INVESTIGATE):
         verdict = Verdict.INVESTIGATE
     return Decision(
         deal_id=deal.id, verdict=verdict,
@@ -239,10 +259,12 @@ def _tier2_grok(deal: Deal, results: list[CheckResult]) -> Decision:
     )
 
 
-def adjudicate(deal: Deal, results: list[CheckResult]) -> Decision:
+def adjudicate(deal: Deal, results: list[CheckResult],
+               policy: Policy | None = None) -> Decision:
     """Tiered pipeline: Tier 0 decides; the forest shadows; Grok is
     reserved for hard cases. A forest RELEASE/REFUND is never returned.
     """
+    policy = policy or DEFAULT_POLICY
     decided = _tier0(deal, results)
     if decided:
         return decided
@@ -252,7 +274,8 @@ def adjudicate(deal: Deal, results: list[CheckResult]) -> Decision:
     unknowns = sum(1 for r in results if r.status == CheckStatus.UNKNOWN)
     fails = [r for r in results if r.status == CheckStatus.FAIL]
     evidence = [r.evidence for r in results if r.evidence]
-    if unknowns <= 2 and len(fails) <= 1:
+    if (unknowns <= policy.shadow_max_unknowns
+            and len(fails) <= policy.shadow_max_fails):
         # Formerly the forest's home turf. In shadow mode the case
         # escalates instead of letting the forest move money.
         d = Decision(
@@ -270,7 +293,7 @@ def adjudicate(deal: Deal, results: list[CheckResult]) -> Decision:
     # is recorded next to its verdict; disagreement -> INVESTIGATE,
     # never a forest override.
     try:
-        d = _tier2_grok(deal, results)
+        d = _tier2_grok(deal, results, policy)
     except Exception:
         d = Decision(
             deal_id=deal.id, verdict=Verdict.INVESTIGATE, confidence=0.0,

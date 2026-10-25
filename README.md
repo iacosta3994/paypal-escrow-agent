@@ -135,11 +135,28 @@ python -m pytest tests/                  # or run the test files directly
 
 Week 4 of 5. The full lifecycle is built and tested end-to-end: two-party
 terms, funding, buyer confirmation, monitoring, disputes with party
-evidence, split settlement, webhooks, party pages and notifications —
-204 tests passing, one documented skip (the buyer-login approval leg,
-a PayPal platform constraint covered by a manual-mode test). All three
-demo scenarios produce the correct verdict at $0 total AI spend.
-Remaining: demo video and Devpost submission — see BUILD_PLAN.md.
+evidence, split settlement, webhooks, party pages and notifications.
+On top of that, the architecture increment (2026-10-24) formalized the
+kernel/adapter split — money (PayPal), evidence, and sensor adapters
+behind narrow interfaces, operator parameters in one policy module —
+and proved the thesis by adding a second domain, **code-deliverable
+escrow** (`src/code_delivery/`), with zero changes to the adjudication
+kernel: a GitHub evidence adapter and deterministic requirements
+grader feed the same Tier 0 rules, so a software delivery releases,
+splits at its measured completion fraction, or refunds like any other
+deal. Post-settlement outcomes can now be recorded against decisions
+(`src/outcomes.py`), so verdicts accumulate labels.
+
+367 tests passing, one documented skip (the buyer-login approval leg,
+a PayPal platform constraint covered by a manual-mode test). The
+regression corpus grew from 11 to 83 golden cases via an adversarial
+generator; its screening caught a real bug — partial splits could
+release on an unverified delivery address — now fixed and guarded.
+A frozen 48-case held-out benchmark (eval/) measured the build
+before and after the increment: verdict accuracy 48/48 and sensor
+accuracy 0.979 both runs, no drift. All three demo scenarios produce
+the correct verdict at $0 total AI spend. Remaining: demo video and
+Devpost submission — see BUILD_PLAN.md.
 
 ## Limitations — stated plainly
 

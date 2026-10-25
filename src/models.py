@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from .policy import DEFAULT_POLICY
+
 
 class DealState(str, Enum):
     PROPOSED = "proposed"
@@ -39,7 +41,9 @@ class DealTerms:
     buyer_email: str
     seller_email: str
     delivery_zip: str
-    window_days: int = 14
+    # Default from policy (src/policy.py); 14 unless overridden.
+    window_days: int = field(
+        default_factory=lambda: DEFAULT_POLICY.default_window_days)
     release_conditions: str = "delivery confirmed to buyer address"
 
 

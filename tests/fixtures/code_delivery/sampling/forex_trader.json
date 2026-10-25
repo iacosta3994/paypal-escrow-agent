@@ -1,0 +1,9 @@
+[
+ {"id":"sma_strategy","kind":"symbol_exists","weight":2,"target":"strategy.py:SMA","description":"README: strategy is based on a 2 SMA cross"},
+ {"id":"candle_ohlc","kind":"symbol_exists","weight":1,"target":"candles.py:OHLC","description":"candle data handling the strategy runs on"},
+ {"id":"trading_app","kind":"symbol_exists","weight":1,"target":"app.py:trading","description":"README Getting started: run app.py"},
+ {"id":"fibonacci","kind":"symbol_exists","weight":2,"target":"strategy.py:fibonacci_retracement","description":"README planned: Fibonacci retracement and extension levels"},
+ {"id":"rsi","kind":"symbol_exists","weight":2,"target":"strategy.py:RSI","description":"README planned: RSI indicator"},
+ {"id":"multi_timeframe","kind":"symbol_exists","weight":1,"target":"strategy.py:multi_timeframe_analysis","description":"README planned: Multi time frame analysis"},
+ {"id":"readme_getting_started","kind":"readme_section","weight":1,"target":"Getting started","description":"README has a Getting started section"}
+]

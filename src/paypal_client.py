@@ -16,6 +16,11 @@ Funding flow (Orders v2, intent=AUTHORIZE):
                             funds held. Raises 422 ORDER_NOT_APPROVED
                             until step 2 has happened.
   4. capture() / void()  -> settle the held authorization.
+
+Kernel code does not import this module directly (Wave 1 / A1): it
+depends on the MoneyAdapter interface in src/adapters/base.py, and
+src/adapters/paypal.py's PayPalMoneyAdapter delegates to the
+functions here. Direct callers remain the live-sandbox test helpers.
 """
 import base64
 import time

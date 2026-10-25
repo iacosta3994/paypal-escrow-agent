@@ -21,12 +21,17 @@ at <= 9 — the same thresholds in remaining-time terms).
 from datetime import datetime, timezone
 
 from .models import Deal, DealState
+from .policy import DEFAULT_POLICY, Policy
 
-EXPIRY_DAYS = 29          # PayPal authorization lifetime
-WARN_AT_DAYS = 20         # flag: re-authorize or escalate
-ESCALATE_AT_DAYS = 25     # escalate to humans
-_DAYS_LEFT_WARN = EXPIRY_DAYS - WARN_AT_DAYS        # 9
-_DAYS_LEFT_ESCALATE = EXPIRY_DAYS - ESCALATE_AT_DAYS  # 4
+# Back-compat aliases (Wave 1 / A2): these values now live in
+# src/policy.py as DEFAULT_POLICY fields; the names below remain so
+# existing imports keep working. Treat them as read-only snapshots
+# of the default policy, not as the place to tune thresholds.
+EXPIRY_DAYS = DEFAULT_POLICY.auth_expiry_days        # 29
+WARN_AT_DAYS = DEFAULT_POLICY.auth_warn_at_days      # 20
+ESCALATE_AT_DAYS = DEFAULT_POLICY.auth_escalate_at_days  # 25
+_DAYS_LEFT_WARN = DEFAULT_POLICY.auth_days_left_warn        # 9
+_DAYS_LEFT_ESCALATE = DEFAULT_POLICY.auth_days_left_escalate  # 4
 
 
 def _parse(ts: str | None) -> datetime | None:
@@ -50,12 +55,14 @@ def auth_age_days(deal: Deal,
     return (now - basis).total_seconds() / 86400.0
 
 
-def expiry_status(deal: Deal, now: datetime | None = None) -> dict | None:
+def expiry_status(deal: Deal, now: datetime | None = None,
+                  policy: Policy | None = None) -> dict | None:
     """{age_days, days_left, level, expires_at} for a live deal, or
     None when expiry doesn't apply (settled, or nothing held yet).
 
     level: "ok" | "warn" | "escalate" | "expired".
     """
+    policy = policy or DEFAULT_POLICY
     if deal.state in (DealState.RELEASED, DealState.REFUNDED):
         return None
     age = auth_age_days(deal, now)
@@ -69,22 +76,22 @@ def expiry_status(deal: Deal, now: datetime | None = None) -> dict | None:
     if days_left is not None:
         if days_left < 0:
             level = "expired"
-        elif days_left <= _DAYS_LEFT_ESCALATE:
+        elif days_left <= policy.auth_days_left_escalate:
             level = "escalate"
-        elif days_left <= _DAYS_LEFT_WARN:
+        elif days_left <= policy.auth_days_left_warn:
             level = "warn"
         else:
             level = "ok"
     else:
-        if age >= EXPIRY_DAYS:
+        if age >= policy.auth_expiry_days:
             level = "expired"
-        elif age >= ESCALATE_AT_DAYS:
+        elif age >= policy.auth_escalate_at_days:
             level = "escalate"
-        elif age >= WARN_AT_DAYS:
+        elif age >= policy.auth_warn_at_days:
             level = "warn"
         else:
             level = "ok"
-        days_left = EXPIRY_DAYS - age
+        days_left = policy.auth_expiry_days - age
     return {"age_days": None if age is None else round(age, 2),
             "days_left": round(days_left, 2),
             "level": level,

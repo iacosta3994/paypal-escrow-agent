@@ -3,6 +3,12 @@
 For the hackathon demo, tracking events are simulated (scripted scenarios).
 The gatherer interface is carrier-shaped so a real API (AfterShip/EasyPost)
 can be dropped in later without changing the checklist.
+
+Kernel code reaches this module through the EvidenceAdapter
+interface (Wave 1 / A1): src/adapters/simulator.py's
+SimulatorEvidenceAdapter delegates to gather_evidence() here, and
+src/adapters/base.py documents the evidence-dict contract a second
+adapter (e.g. a GitHub code-deliverable gatherer) must satisfy.
 """
 import random
 from datetime import datetime, timezone

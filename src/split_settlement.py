@@ -22,17 +22,22 @@ PayPal shape — determined empirically against the sandbox
   two-step shape above is the one with read-back proof for both
   legs.
 """
-from . import paypal_client
+from .adapters import PayPalMoneyAdapter
 from .models import Deal, Decision, Verdict
 
 
 def execute_split(deal: Deal, decision: Decision,
-                  use_paypal: bool) -> dict:
+                  use_paypal: bool, *, money_adapter=None) -> dict:
     """Execute a SPLIT decision for ``deal``.
+
+    Money moves through the MoneyAdapter interface
+    (src/adapters/base.py); the default is the PayPal adapter, which
+    delegates to src/paypal_client.py, so pre-A1 call sites and
+    fixtures that patch paypal_client are unchanged.
 
     Returns {"capture_id", "released_cents", "voided_cents",
     "capture"} — capture_id/capture are None in simulated mode,
-    where no PayPal calls are made at all.
+    where no money-adapter calls are made at all.
     """
     if decision.verdict != Verdict.SPLIT:
         raise ValueError(
@@ -56,9 +61,10 @@ def execute_split(deal: Deal, decision: Decision,
         raise RuntimeError(
             f"cannot split-settle deal {deal.id}: no PayPal "
             "authorization recorded — money would not move")
-    capture = paypal_client.capture(
+    money = money_adapter or PayPalMoneyAdapter()
+    capture = money.capture(
         deal.paypal_auth_id, amount_cents=x,
         currency=deal.terms.currency, final_capture=False)
-    paypal_client.void(deal.paypal_auth_id)
+    money.void(deal.paypal_auth_id)
     return {"capture_id": capture.get("id"), "released_cents": x,
             "voided_cents": voided, "capture": capture}

@@ -1,0 +1,2762 @@
+{
+  "meta": {
+    "benchmark": {
+      "benchmark": "held-out escrow adjudication benchmark",
+      "version": 1,
+      "generated": "2026-10-24",
+      "frozen": true,
+      "seed": 20261024,
+      "generator": "eval/generate_benchmark.py",
+      "case_count": 48,
+      "copyright": "Copyright 2026 Brian Acosta",
+      "license": "Apache License 2.0",
+      "do_not_edit": "FROZEN held-out set. Do not edit these cases; regeneration invalidates every comparison against the 2026-10-24 baseline."
+    },
+    "cases_file": "/home/hatch/workspace/paypal-escrow-agent/eval/benchmark_cases.json",
+    "cases_sha256": "10ddbe90ad8f3c7bf1fb50884af42d19845f713a3f1bc78dcf9a9001cfd47588",
+    "hash_verified": true,
+    "build_commit": "0efb74768ee0f573e82d7144ca709a66f0503f0b",
+    "ran_at": "2026-10-25T06:32:58+0000",
+    "duration_s": 528.4,
+    "runner": "scripts/benchmark.py"
+  },
+  "verdict_summary": {
+    "overall": {
+      "correct": 48,
+      "total": 48,
+      "accuracy": 1.0
+    },
+    "by_expected_class": {
+      "investigate": {
+        "correct": 23,
+        "total": 23,
+        "accuracy": 1.0
+      },
+      "refund": {
+        "correct": 10,
+        "total": 10,
+        "accuracy": 1.0
+      },
+      "release": {
+        "correct": 8,
+        "total": 8,
+        "accuracy": 1.0
+      },
+      "split": {
+        "correct": 7,
+        "total": 7,
+        "accuracy": 1.0
+      }
+    },
+    "confusion": {
+      "investigate": {
+        "investigate": 23
+      },
+      "refund": {
+        "refund": 10
+      },
+      "release": {
+        "release": 8
+      },
+      "split": {
+        "split": 7
+      }
+    },
+    "split_cents": {
+      "correct": 7,
+      "total": 7
+    }
+  },
+  "sensor_summary": {
+    "pooled": {
+      "correct": 327,
+      "total": 334,
+      "accuracy": 0.9790419161676647
+    },
+    "per_question": {
+      "address_match": {
+        "correct": 29,
+        "total": 29,
+        "accuracy": 1.0
+      },
+      "amount_match": {
+        "correct": 47,
+        "total": 48,
+        "accuracy": 0.9791666666666666
+      },
+      "complaint": {
+        "correct": 48,
+        "total": 48,
+        "accuracy": 1.0
+      },
+      "condition_ok": {
+        "correct": 8,
+        "total": 8,
+        "accuracy": 1.0
+      },
+      "delivered": {
+        "correct": 25,
+        "total": 25,
+        "accuracy": 1.0
+      },
+      "seller_history_good": {
+        "correct": 45,
+        "total": 48,
+        "accuracy": 0.9375
+      },
+      "shipped": {
+        "correct": 79,
+        "total": 80,
+        "accuracy": 0.9875
+      },
+      "within_window": {
+        "correct": 46,
+        "total": 48,
+        "accuracy": 0.9583333333333334
+      }
+    },
+    "per_tree_question": {
+      "condition.complaint": {
+        "correct": 48,
+        "total": 48,
+        "accuracy": 1.0
+      },
+      "condition.condition_ok": {
+        "correct": 8,
+        "total": 8,
+        "accuracy": 1.0
+      },
+      "fulfillment.address_match": {
+        "correct": 29,
+        "total": 29,
+        "accuracy": 1.0
+      },
+      "fulfillment.delivered": {
+        "correct": 25,
+        "total": 25,
+        "accuracy": 1.0
+      },
+      "fulfillment.shipped": {
+        "correct": 40,
+        "total": 40,
+        "accuracy": 1.0
+      },
+      "risk.amount_match": {
+        "correct": 47,
+        "total": 48,
+        "accuracy": 0.9791666666666666
+      },
+      "risk.seller_history_good": {
+        "correct": 45,
+        "total": 48,
+        "accuracy": 0.9375
+      },
+      "risk.shipped": {
+        "correct": 39,
+        "total": 40,
+        "accuracy": 0.975
+      },
+      "risk.within_window": {
+        "correct": 46,
+        "total": 48,
+        "accuracy": 0.9583333333333334
+      }
+    },
+    "repeats": 1
+  },
+  "fact_mismatches": [],
+  "cases": [
+    {
+      "id": "rel_clean_standard",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "release",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_buyer_confirmed_no_scan",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "release",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_buyer_confirmed_wrong_zip",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "NO",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_bad_seller_history",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 7,
+      "det_total": 8,
+      "det_accuracy": 0.875,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_benign_messages",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "release",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_multi_item_full",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "release",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_no_pickup_scan_but_delivered",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rel_last_day_of_window",
+      "category": "clean_release",
+      "expected_verdict": "release",
+      "verdict": "release",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "release",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_stalled_label_6d",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "NO",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "refund",
+        "votes": {
+          "fulfillment": "refund",
+          "condition": "investigate",
+          "risk": "refund"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "no",
+            "fulfillment.delivered": "no",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "no",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "refund",
+          "forest_votes": {
+            "fulfillment": "refund",
+            "condition": "investigate",
+            "risk": "refund"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_stalled_label_12d_bad_history",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "NO",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 5,
+      "det_total": 6,
+      "det_accuracy": 0.8333333333333334,
+      "oracle": {
+        "verdict": "refund",
+        "votes": {
+          "fulfillment": "refund",
+          "condition": "investigate",
+          "risk": "refund"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "no",
+            "fulfillment.delivered": "no",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "no",
+            "risk.within_window": "yes",
+            "risk.amount_match": "no",
+            "risk.seller_history_good": "no"
+          },
+          "forest_verdict": "refund",
+          "forest_votes": {
+            "fulfillment": "refund",
+            "condition": "investigate",
+            "risk": "refund"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_never_shipped_window_blown",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "NO",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 3,
+      "det_total": 4,
+      "det_accuracy": 0.75,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "refund"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_late_delivered_tight_window",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "NO",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "refund"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "no",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "refund"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_late_delivered_day21",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "NO",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 7,
+      "det_total": 8,
+      "det_accuracy": 0.875,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "refund"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "no",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "refund"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_amount_under_by_250",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "NO",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "no",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_amount_overcharge",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "NO",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "no",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_amount_mismatch_in_transit",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "NO",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "no",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ref_both_no_stalled_and_late",
+      "category": "clean_refund",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "NO",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "NO",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 4,
+      "det_total": 6,
+      "det_accuracy": 0.6666666666666666,
+      "oracle": {
+        "verdict": "refund",
+        "votes": {
+          "fulfillment": "refund",
+          "condition": "investigate",
+          "risk": "refund"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "no",
+            "fulfillment.delivered": "no",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "refund",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_in_transit_progressing",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_label_awaiting_pickup",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 4,
+      "det_total": 4,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_stalled_4_near_boundary",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 4,
+      "det_total": 4,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "no"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_no_tracking_within_window",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 4,
+      "det_total": 4,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_address_mismatch_far_zip",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "NO",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_delivered_no_zip",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "release",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "release",
+        "votes": {
+          "fulfillment": "release",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "release",
+          "forest_votes": {
+            "fulfillment": "release",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_damaged_carrier_exception",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 9,
+      "det_total": 9,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_damaged_buyer_message",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 9,
+      "det_total": 9,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_wrong_item_message",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 9,
+      "det_total": 9,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_dispute_open_clean_delivered",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_dispute_open_in_transit",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_damage_report_persists",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 9,
+      "det_total": 9,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_partial_with_dispute",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_partial_with_damage",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_settlement_offer_not_delivered",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_buyer_confirmed_but_damaged",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 9,
+      "det_total": 9,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_seller_tracking_proof_in_transit",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 6,
+      "det_total": 6,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "inv_delivered_zip_only_no_scan",
+      "category": "investigate",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_partial_1_of_3",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 3333,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_partial_2_of_5",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 18300,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_partial_3_of_4",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 54000,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_dispute_settlement_damaged",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 28800,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 9,
+      "det_total": 9,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_dispute_settlement_clean",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 17500,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_settlement_buyer_confirmed",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 21000,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "split_partial_last_day",
+      "category": "split",
+      "expected_verdict": "split",
+      "verdict": "split",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": 25250,
+      "split_cents_correct": true,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "release"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "release"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unk_empty_tracking_day0_bad_history",
+      "category": "unknown_heavy",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 4,
+      "det_total": 4,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "no"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unk_number_only_day1",
+      "category": "unknown_heavy",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 4,
+      "det_total": 4,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "no"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix_delivered_dispute_bad_history",
+      "category": "mixed_valence",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "NO"
+      },
+      "det_correct": 7,
+      "det_total": 8,
+      "det_accuracy": 0.875,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix_in_transit_customs_exception",
+      "category": "mixed_valence",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "NO",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 7,
+      "det_total": 7,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "no",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix_buyer_confirmed_amount_mismatch",
+      "category": "mixed_valence",
+      "expected_verdict": "refund",
+      "verdict": "refund",
+      "verdict_correct": true,
+      "tier": 0,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": null,
+      "facts": {
+        "SHIPPED": "YES",
+        "DELIVERED": "YES",
+        "ADDRESS_MATCH": "YES",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "NO",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "NO",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 8,
+      "det_total": 8,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "yes",
+            "condition.condition_ok": "yes",
+            "condition.complaint": "no",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "no",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix_stalled3_with_dispute",
+      "category": "mixed_valence",
+      "expected_verdict": "investigate",
+      "verdict": "investigate",
+      "verdict_correct": true,
+      "tier": 1,
+      "split_release_cents": null,
+      "split_cents_correct": null,
+      "shadow_verdict": "investigate",
+      "facts": {
+        "SHIPPED": "UNKNOWN",
+        "DELIVERED": "UNKNOWN",
+        "ADDRESS_MATCH": "UNKNOWN",
+        "WITHIN_WINDOW": "YES",
+        "AMOUNT_MATCH": "YES",
+        "CONDITION_OK": "UNKNOWN",
+        "BUYER_COMPLAINT": "YES",
+        "SELLER_HISTORY_GOOD": "YES"
+      },
+      "det_correct": 4,
+      "det_total": 4,
+      "det_accuracy": 1.0,
+      "oracle": {
+        "verdict": "investigate",
+        "votes": {
+          "fulfillment": "investigate",
+          "condition": "investigate",
+          "risk": "investigate"
+        }
+      },
+      "sensor_repeats": [
+        {
+          "rep": 0,
+          "answers": {
+            "fulfillment.shipped": "yes",
+            "fulfillment.delivered": "yes",
+            "fulfillment.address_match": "no",
+            "condition.condition_ok": "no",
+            "condition.complaint": "yes",
+            "risk.shipped": "yes",
+            "risk.within_window": "yes",
+            "risk.amount_match": "yes",
+            "risk.seller_history_good": "yes"
+          },
+          "forest_verdict": "investigate",
+          "forest_votes": {
+            "fulfillment": "investigate",
+            "condition": "investigate",
+            "risk": "investigate"
+          }
+        }
+      ]
+    }
+  ]
+}

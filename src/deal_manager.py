@@ -13,37 +13,59 @@ gathered evidence.
 import uuid
 from datetime import datetime, timezone
 
-from . import audit, auth_expiry, paypal_client
+from . import audit, auth_expiry
+from .adapters import PayPalMoneyAdapter, SimulatorEvidenceAdapter
 from .checklist import run_checklist
 from .decision_engine import adjudicate
-from .evidence import gather_evidence
 from .models import Deal, DealState, DealTerms, Decision, Verdict
+from .policy import DEFAULT_POLICY, Policy
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _stamp_authorization(deal: Deal) -> None:
-    """Record when the hold was placed, and read PayPal's own
-    created/expires timestamps back onto the deal (best effort: the
-    authorization object is the source of truth for its expiry, and
-    expiry surfacing falls back to funded_at when the read fails)."""
-    deal.funded_at = _now_iso()
-    if deal.paypal_auth_id:
-        try:
-            auth = paypal_client.get_authorization(deal.paypal_auth_id)
-        except Exception:
-            return
-        deal.paypal_auth_created_at = auth.get("create_time")
-        deal.paypal_auth_expires_at = auth.get("expiration_time")
-
-
 class DealManager:
-    def __init__(self, use_paypal: bool = False):
-        self.use_paypal = use_paypal
+    def __init__(self, use_paypal: bool = False, *,
+                 money_adapter=None, evidence_adapter=None,
+                 policy: Policy | None = None):
+        """Kernel entry point.
+
+        Adapters (Wave 1 / A1): the manager depends on the
+        MoneyAdapter / EvidenceAdapter interfaces from
+        src.adapters.base, never on a concrete client. Defaults keep
+        every pre-A1 call site identical: the PayPal adapter (which
+        delegates to src/paypal_client.py) and the simulator-backed
+        evidence adapter. Injecting a money_adapter implies money
+        mode (use_paypal becomes True): plain injection means "move
+        real money through this adapter", and an injected adapter
+        with use_paypal left False would otherwise be dead wiring.
+
+        policy (Wave 1 / A2): the operator-judgment thresholds from
+        src/policy.py; DEFAULT_POLICY reproduces prior behavior.
+        """
+        self.money = money_adapter or PayPalMoneyAdapter()
+        self.evidence_adapter = (evidence_adapter
+                                 or SimulatorEvidenceAdapter())
+        self.policy = policy or DEFAULT_POLICY
+        self.use_paypal = use_paypal or money_adapter is not None
         self.deals: dict[str, Deal] = {}
         self._transition_listeners = []
+
+    def _stamp_authorization(self, deal: Deal) -> None:
+        """Record when the hold was placed, and read the money
+        adapter's own created/expires timestamps back onto the deal
+        (best effort: the authorization object is the source of truth
+        for its expiry, and expiry surfacing falls back to funded_at
+        when the read fails)."""
+        deal.funded_at = _now_iso()
+        if deal.paypal_auth_id:
+            try:
+                auth = self.money.get_authorization(deal.paypal_auth_id)
+            except Exception:
+                return
+            deal.paypal_auth_created_at = auth.get("create_time")
+            deal.paypal_auth_expires_at = auth.get("expiration_time")
 
     def on_transition(self, cb) -> None:
         """Register a transition listener: cb(deal, old_state,
@@ -134,7 +156,7 @@ class DealManager:
                     raise ValueError(
                         f"cannot fund: {party} has not accepted the terms")
         if self.use_paypal:
-            auth = paypal_client.create_authorization(
+            auth = self.money.create_authorization(
                 deal.terms.amount_cents, deal.terms.currency,
                 f"Escrow: {deal.terms.item_description}",
                 payment_source=payment_source,
@@ -148,7 +170,7 @@ class DealManager:
                 deal, DealState.FUNDED if deal.paypal_auth_id
                 else DealState.AWAITING_APPROVAL)
             if deal.paypal_auth_id:
-                _stamp_authorization(deal)
+                self._stamp_authorization(deal)
         else:
             deal.funded_at = _now_iso()
             self._set_state(deal, DealState.FUNDED)
@@ -169,9 +191,9 @@ class DealManager:
         if deal.state != DealState.AWAITING_APPROVAL:
             raise ValueError(
                 f"cannot complete funding in state {deal.state}")
-        auth = paypal_client.authorize_order(deal.paypal_order_id)
+        auth = self.money.authorize_order(deal.paypal_order_id)
         deal.paypal_auth_id = auth["authorization_id"]
-        _stamp_authorization(deal)
+        self._stamp_authorization(deal)
         self._set_state(deal, DealState.FUNDED)
         return deal
 
@@ -192,7 +214,7 @@ class DealManager:
         WARN at 20 days records an audit flag; ESCALATE/EXPIRED at
         25/29 records an audit escalation and escalates the deal.
         Each level is recorded once per deal. Returns the status."""
-        status = auth_expiry.expiry_status(deal, now)
+        status = auth_expiry.expiry_status(deal, now, policy=self.policy)
         if status is None or status["level"] == "ok":
             return status
         age = status["age_days"]
@@ -239,10 +261,10 @@ class DealManager:
         if deal.state not in (DealState.FUNDED, DealState.MONITORING):
             raise ValueError(f"cannot monitor deal in state {deal.state}")
         self._set_state(deal, DealState.MONITORING)
-        evidence = gather_evidence(deal, tracking, days_since_funding,
-                                   messages)
-        results = run_checklist(deal, evidence)
-        decision = adjudicate(deal, results)
+        evidence = self.evidence_adapter.gather(
+            deal, tracking, days_since_funding, messages)
+        results = run_checklist(deal, evidence, policy=self.policy)
+        decision = adjudicate(deal, results, policy=self.policy)
         audit.record(decision)
         self.check_auth_expiry(deal, now)
         return decision, results
@@ -275,11 +297,11 @@ class DealManager:
                     "authorization recorded — money would not move")
         if decision.verdict == Verdict.RELEASE:
             if self.use_paypal:
-                paypal_client.capture(deal.paypal_auth_id)
+                self.money.capture(deal.paypal_auth_id)
             self._set_state(deal, DealState.RELEASED)
         elif decision.verdict == Verdict.REFUND:
             if self.use_paypal:
-                paypal_client.void(deal.paypal_auth_id)
+                self.money.void(deal.paypal_auth_id)
             self._set_state(deal, DealState.REFUNDED)
         elif decision.verdict == Verdict.SPLIT:
             if decision.split_release_cents is None:
@@ -287,7 +309,8 @@ class DealManager:
                     f"cannot split-settle deal {deal.id}: decision "
                     "carries no split_release_cents")
             from .split_settlement import execute_split
-            result = execute_split(deal, decision, self.use_paypal)
+            result = execute_split(deal, decision, self.use_paypal,
+                                   money_adapter=self.money)
             deal.capture_id = result["capture_id"]
             deal.split_released_cents = result["released_cents"]
             deal.split_voided_cents = result["voided_cents"]
@@ -300,7 +323,7 @@ class DealManager:
             # inconclusive adjudication must not resurrect it.
             self._set_state(
                 deal, DealState.ESCALATED
-                if n >= 3 or deal.state == DealState.ESCALATED
+                if n >= self.policy.investigate_escalation_cycles or deal.state == DealState.ESCALATED
                 else DealState.MONITORING)
         return deal
 
