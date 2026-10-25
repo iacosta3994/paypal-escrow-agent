@@ -174,11 +174,14 @@ def test_buyer_approval_completes_funding(audit_log, held_cleanup):
     if MANUAL:
         print(f"\nApprove this sandbox order as the buyer: "
               f"{deal.paypal_approve_url}")
+        # The checkout token IS the order id; operators relaying the
+        # approval to a browser session need the id in plain form.
+        print(f"ORDER_ID={deal.paypal_order_id}", flush=True)
     else:
         _approve_as_buyer(deal.paypal_approve_url,
                           BUYER_EMAIL, BUYER_PASSWORD)
 
-    deadline = time.time() + 120
+    deadline = time.time() + (900 if MANUAL else 120)  # manual = human-speed
     while time.time() < deadline:
         if pp_order(deal.paypal_order_id)["status"] == "APPROVED":
             break
