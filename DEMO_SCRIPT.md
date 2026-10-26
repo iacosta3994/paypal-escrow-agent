@@ -2,6 +2,19 @@
 
 Thesis: **AI you can trust with money, because it shows its work.**
 
+## Demo links (share-link identity)
+
+The dashboard is at `/`. Every party page is a share link —
+`/deal/<id>?party=<buyer|seller>&k=<token>` — and holding the link
+IS being that party (demo-grade identity; see README limitations).
+The three seeded deals use stable tokens so these links never
+churn: buyer `demo-link-buyer`, seller `demo-link-seller`. Deals
+proposed live in the UI get random tokens; the proposer lands on
+their own link with the counterparty's link shown, ready to send.
+The Oct 29 rehearsal walkthrough: propose a milestone deal from
+`/propose`, send the counterparty link to a second browser, accept
+there, fund, then work the milestones from both sides.
+
 ## Scenario 1 — Clean release (the happy path)
 - Deal: $500 used camera, buyer + seller, release on delivery confirmation.
 - Terms before money: the seller proposes the deal; the buyer accepts
@@ -39,20 +52,27 @@ Thesis: **AI you can trust with money, because it shows its work.**
 - Void executes; buyer refunded.
 
 ## Scenario 3 — Ambiguous (the escalation)
-- Deal: $1,200 laptop. Delivered scan present, ZIP matches — but the
-  carrier reports the package visibly damaged, so condition is disputed.
-- Checklist: delivery PASS, condition CONFLICT.
-- **Verdict: INVESTIGATE** — from day 1 and every day after. The system
-  refuses to guess: no automatic release, no automatic refund on a
-  condition dispute. It escalates for a human with the evidence attached.
+- Deal: $1,200 laptop, milestone-structured: **delivery $900** +
+  **condition verified $300**. Delivered scan present, ZIP matches —
+  but the carrier reports the package visibly damaged, so condition
+  is disputed.
+- The delivery milestone verifies on its own checks and releases
+  its $900 share; the condition milestone's checklist reads
+  condition CONFLICT.
+- **Verdict on the condition milestone: INVESTIGATE** — from day 1
+  and every day after. The system refuses to guess: no automatic
+  release, no automatic refund on a condition dispute. It escalates
+  for a human with the evidence attached, and the settled delivery
+  share is never unwound by the open question.
 - This is the trust moment: the AI knows what it doesn't know.
-- Resolution beat (the lifecycle closing): the buyer opens a dispute
-  on their deal page and attaches their damage report as evidence;
-  the seller's evidence appears on the same timeline. The buyer
-  accepts a split — keep the laptop, release $900 of the $1,200 —
-  and the system executes exactly that: capture $900, void $300,
-  deal SPLIT_SETTLED, both parties notified. If the buyer accepts
-  nothing, the INVESTIGATE above is where it stays — a human decides.
+- Resolution beat (the lifecycle closing): the buyer disputes the
+  condition milestone on their deal page and attaches their damage
+  report as evidence; the seller's evidence appears under the same
+  milestone. The parties accept a split of that milestone's $300
+  share, and the system executes exactly that: capture the agreed
+  part, void the rest, the deal closes SPLIT_SETTLED, both parties
+  notified. If they accept nothing, the INVESTIGATE above is where
+  it stays — a human decides.
   (A partial shipment settles the same way, proportionally, without
   a dispute: capture the delivered fraction, void the rest.)
 - **The shadow tier (say it plainly):** "We also run a small local model

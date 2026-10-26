@@ -133,7 +133,9 @@ def test_allowed_actions_matrix(ui):
     _, mgr = ui
     deal = _proposed_seller(mgr)
     # Seller proposed, so the seller already accepted by proposing.
-    assert allowed_actions(deal, "seller") == set()
+    # (2026-10-26: the proposer also holds "withdraw" while the
+    # counterparty has not accepted — user-flow spec §3.)
+    assert allowed_actions(deal, "seller") == {"withdraw"}
     assert allowed_actions(deal, "buyer") == {"accept", "decline"}
     assert allowed_actions(deal, "stranger") == set()
 
@@ -456,7 +458,11 @@ def test_seeded_app_dashboard_and_party_pages(seeded_client):
 
     for deal in deals:
         for party in ("buyer", "seller"):
-            resp = seeded_client.get(f"/deal/{deal.id}?party={party}")
+            # Seeded deals carry the stable demo tokens
+            # (DEMO_SCRIPT.md); their links include them.
+            resp = seeded_client.get(
+                f"/deal/{deal.id}?party={party}"
+                f"&k={deal.share_tokens[party]}")
             assert resp.status_code == 200, (deal.id, party)
 
 

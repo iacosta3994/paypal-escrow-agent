@@ -99,6 +99,68 @@ reads). The extension lives in `src/code_delivery/`:
   `decision_engine.adjudicate()` and settled by the existing
   `DealManager.settle()`.
 
+## Pull-request grading + the /grade workbench (2026-10-25)
+
+The requirements-list pattern generalized to a third deliverable
+shape: a GitHub pull request, graded against the list from the
+issue/agreement it claims to close. This domain is audit-only —
+`src/pr_delivery/` has no checklist pack and settles nothing; it
+produces the same `GradeResult` audit record a code deal produces,
+with the same integer basis-point fraction and decisive-unknown
+rule, so grades are comparable across domains.
+
+- `gather.py` collects read-only GitHub evidence: PR metadata,
+  the paginated changed-file list, and the head commit's check
+  runs — each recorded with its run id and start time. The network
+  sits behind an injectable fetcher (tests run on recorded
+  payloads); a token comes from the argument or `GITHUB_TOKEN`
+  and is never stored on the evidence object.
+- `requirements.py` defines the PR kinds: `files_include` /
+  `files_exclude` (a path or glob the diff must / must not touch),
+  `check_passes` (a named check on the head commit), 
+  `checklist_item` (an item in the PR body's own task list,
+  checked vs unchecked), and `manual_judgment`.
+- `grading.py` grades deterministically. One subtlety lives here:
+  GitHub returns EVERY run of a check, including superseded
+  reruns, so `check_passes` judges only the LATEST run per check
+  name (highest run id — ids are monotonic). A check that is
+  missing, or whose latest run is still running, grades UNKNOWN.
+
+The front end is the dashboard's `/grade` page (`src/app.py`):
+state a requirements list as JSON, point it at a local repo /
+deliverable folder or a GitHub PR, and read back the item-by-item
+audit with its evidence, the completion fraction, and the policy
+band that fraction falls in (RELEASE / SPLIT / REFUND /
+INVESTIGATE). Advisory only — the page moves no money.
+
+## Agreements, share links, milestones (2026-10-26)
+
+The web layer (`src/app.py`, one shared Atlas Glass shell) gained
+the full user flow from the 2026-10-26 flow spec. A proposal
+carries the agreement itself — `DealTerms.requirements`, an
+additive list of `{text, check}` items whose `check` names a
+checklist item or is `None` for manual judgment — and the
+completion date is derived from the delivery window, never stored
+twice. Proposed deals issue per-party share links
+(`Deal.share_tokens`); the token matching the party gates both the
+party page and every POST, through the same allow-list pattern as
+`allowed_actions`. Identity-by-link is demo-grade by design (see
+README limitations).
+
+A deal may be structured as milestones (`src/models.py`
+`Milestone`, `src/milestones.py`): shares that must sum to the deal
+total, each with its own checklist item (or manual judgment), due
+date, and state. Milestone deals skip whole-deal adjudication:
+monitoring evaluates per milestone with the same Tier 0 rules,
+the per-item shadow view groups checklist items under their
+milestone, and `DealManager.settle_milestone` settles each share
+through the existing capture/void mechanics. A failed milestone
+refunds its share without unwinding settled ones; the deal closes
+when every milestone has settled, at the aggregate outcome.
+Disputes on milestone deals are milestone-scoped (evidence records
+tagged with the milestone id); the deal-level dispute surface
+belongs to lump deals.
+
 ## Deal lifecycle
 
 1. **PROPOSED** — buyer + seller agree: amount, item, conditions, window.

@@ -106,9 +106,15 @@ src/
   simulator.py       Demo harness: 3 scripted deals end-to-end
   audit.py           Append-only audit log of every decision
   app.py             Operator dashboard + buyer/seller deal pages
-tests/               204 tests: lifecycle, money path vs the live
+                     (+ /grade: the requirements-list workbench)
+  code_delivery/     Repo grading: requirements list vs a delivered
+                     repo (AST symbols, tests, README), same kernel
+  pr_delivery/       PR grading: requirements list vs a GitHub pull
+                     request (changed files, check runs, checklist)
+tests/               383 tests: lifecycle, money path vs the live
                      sandbox, split settlement, webhooks, disputes,
-                     party UI, golden corpus, hygiene + ladder gates
+                     party UI, golden corpus, hygiene + ladder gates,
+                     repo/PR grading, grade workbench
 ARCHITECTURE.md      Full design doc
 BUILD_PLAN.md        Week-by-week plan through Nov 12
 DEMO_SCRIPT.md       The 3-scenario demo, < 3 minutes
@@ -145,11 +151,32 @@ kernel: a GitHub evidence adapter and deterministic requirements
 grader feed the same Tier 0 rules, so a software delivery releases,
 splits at its measured completion fraction, or refunds like any other
 deal. Post-settlement outcomes can now be recorded against decisions
-(`src/outcomes.py`), so verdicts accumulate labels.
+(`src/outcomes.py`), so verdicts accumulate labels. The pattern
+generalized once more on 2026-10-25 (`src/pr_delivery/`): a GitHub
+pull request is graded against the requirements list from the issue
+it claims to close — changed files, head-commit check runs, and the
+PR's own checklist — with the same integer fraction math and
+decisive-unknown rule, returning the same shape of grade. The
+dashboard's `/grade` page is the standalone workbench for the whole
+pattern: state a requirements list, point it at a repo or a PR, and
+read back the audit — every item graded with its evidence.
 
-368 tests passing, zero skips — the full suite ran green on
-2026-10-25, including the buyer-approval leg, verified end-to-end in
-manual mode against a live sandbox buyer session (see Limitations). The
+On 2026-10-26 the web layer grew the full user flow: a propose form
+(single lump or milestone-structured, shares validated to sum to the
+total), per-party share links that carry the agreement between two
+browsers, the agreement shown live on both party pages from the
+moment of proposal, per-milestone tracking and settlement, and a
+per-item view where every checklist item sits next to its evidence,
+Tier 0's result, and the shadow sensor's per-item read — all in one
+shared Atlas Glass shell. Laya's per-item reads are an additive
+audit field; adjudication is unchanged, and the ladder gate holds
+at 0.947 pooled accuracy.
+
+425 tests passing, 1 skip (the manual buyer-approval leg) — the full
+suite ran green on 2026-10-26, including the live sandbox legs; the
+buyer-approval leg itself was verified end-to-end in manual mode
+against a live sandbox buyer session on 2026-10-25 (see
+Limitations). The
 regression corpus grew from 11 to 83 golden cases via an adversarial
 generator; its screening caught a real bug — partial splits could
 release on an unverified delivery address — now fixed and guarded.
@@ -199,6 +226,29 @@ cases, and golden corpus (partial shipments, ZIP typos, carrier
 exception strings, cent-level mismatches) are realistic but ours.
 100% on our own cases is not a claim about the world; it's a claim
 that the guardrails hold on the cases we could think of.
+
+**Share-link identity is demo-grade, not authentication.** A deal
+proposed in the web UI issues each party an unguessable link
+(`/deal/<id>?party=buyer&k=<token>`); whoever holds the link is
+treated as that party — opening it is the identity. That is what
+makes the two-browser demo work without accounts, and it is not
+production identity: a forwarded link forwards the identity with
+it. Production would put real authentication and per-user
+authorization behind the same pages; the token gate already
+encloses every action the pages offer, so the swap is at the gate,
+not in the flow. The seeded demo deals use stable, published demo
+tokens (see DEMO_SCRIPT.md); proposed deals get random ones.
+
+**Milestone money settles per share; refunds void at close.** A
+milestone-structured deal releases each milestone's share with a
+partial capture as that milestone verifies — the same capture
+mechanics as the proven split settlement. A milestone decided as a
+refund is marked refunded immediately, but its money comes back by
+voiding what remains of the authorization when the deal closes,
+because a PayPal authorization can be voided only once, in full.
+So on the rail, a refunded share's void lands at deal close, not at
+the moment of the decision; the decision, the audit record, and
+each party's notice all happen at decision time.
 
 **Buyer approval cannot be automated.** PayPal offers no API to
 approve an order as the buyer — approval is a human at a web page.
