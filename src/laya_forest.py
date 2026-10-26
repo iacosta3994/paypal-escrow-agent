@@ -46,8 +46,9 @@ from __future__ import annotations
 from collections import Counter
 from typing import NamedTuple
 
-from .laya_questions import (TREE_QUESTIONS, facts_for_tree,
-                              questions_for_tree, state_block)
+from .laya_questions import (FACTS, QUESTIONS, TREE_QUESTIONS,
+                              facts_for_tree, questions_for_tree,
+                              state_block)
 from .models import CheckResult, CheckStatus, Deal, Decision, Verdict
 
 MODEL = "typed-decisions"  # fine-tuned checkpoint; base English can't do this
@@ -214,10 +215,109 @@ def aggregate(tree_outputs: list[dict]) -> dict:
             "votes": votes, "release_vetoed": vetoed}
 
 
+# Fact -> the checklist item build_state() derived it from (the
+# inverse of build_state's mapping). BUYER_COMPLAINT is the one
+# inversion: the no_dispute check PASSes when there is NO complaint,
+# so the fact reads YES exactly when the check FAILs.
+FACT_CHECKS: dict[str, str] = {
+    "SHIPPED": "pickup_confirmed",
+    "DELIVERED": "delivered",
+    "ADDRESS_MATCH": "address_match",
+    "WITHIN_WINDOW": "within_window",
+    "AMOUNT_MATCH": "amount_match",
+    "CONDITION_OK": "condition_clear",
+    "BUYER_COMPLAINT": "no_dispute",
+    "SELLER_HISTORY_GOOD": "seller_history",
+}
+
+# For every fact except BUYER_COMPLAINT, the model's "yes" supports
+# the mapped check passing. For BUYER_COMPLAINT the polarity flips:
+# "yes" (a dispute was filed) supports the no_dispute check FAILING.
+_FACT_PASS_ANSWER: dict[str, str] = {
+    fact: ("no" if fact == "BUYER_COMPLAINT" else "yes")
+    for fact in FACT_CHECKS
+}
+
+
+def item_reads(facts: dict, results: list[CheckResult],
+               tree_outputs: list[dict]) -> list[dict]:
+    """Per-item shadow reads: one entry per forest fact, for the
+    audit log and the per-item dispute view.
+
+    Each entry carries the checklist item the fact maps to, Tier 0's
+    result for that item (status + evidence), Laya's per-item read,
+    and an agreement marker:
+
+    - ``laya_read`` is "approve" when every tree answer on the fact
+      supports the check passing, "disapprove" when every answer
+      supports it failing, and "unknown" when no tree read the fact
+      or the trees' answers conflict.
+    - ``agreement`` is "agree" / "disagree" when Tier 0's status and
+      Laya's read point the same / opposite ways, and "unverifiable"
+      when Tier 0's status is UNKNOWN (the model's forced answer
+      then rests on an unknown fact — a guess, never a reading) or
+      Laya's read is itself "unknown".
+
+    Pure derivation from outputs the forest already produced: no
+    extra inference, no adjudication role. Display + audit only.
+    """
+    by_check = {r.name: r for r in results}
+    # fact -> [(tree, question_id, answer)] from the trees' outputs.
+    reads_by_fact: dict[str, list[dict]] = {f: [] for f in FACTS}
+    for t in tree_outputs:
+        tree = t.get("tree")
+        for qid, answer in t.items():
+            if qid in ("tree",) or qid.startswith("_"):
+                continue
+            q = QUESTIONS.get(qid)
+            if q is not None:
+                reads_by_fact[q.fact].append(
+                    {"tree": tree, "question": qid, "answer": answer})
+    items = []
+    for fact in FACTS:
+        check = FACT_CHECKS[fact]
+        result = by_check.get(check)
+        tier0_status = (result.status.value if result
+                        else CheckStatus.UNKNOWN.value)
+        reads = reads_by_fact[fact]
+        pass_answer = _FACT_PASS_ANSWER[fact]
+        answers = {r["answer"] for r in reads}
+        if not reads or len(answers) > 1:
+            laya_read = "unknown"
+        elif answers == {pass_answer}:
+            laya_read = "approve"
+        elif answers == {"yes", "no"} - {pass_answer}:
+            laya_read = "disapprove"
+        else:  # an answer outside yes/no (e.g. "unknown")
+            laya_read = "unknown"
+        if tier0_status == CheckStatus.UNKNOWN.value \
+                or laya_read == "unknown":
+            agreement = "unverifiable"
+        elif (tier0_status == CheckStatus.PASS.value) == \
+                (laya_read == "approve"):
+            agreement = "agree"
+        else:
+            agreement = "disagree"
+        items.append({
+            "fact": fact,
+            "check": check,
+            "tier0_status": tier0_status,
+            "evidence": result.evidence if result else "",
+            "laya_read": laya_read,
+            "laya_answers": reads,
+            "agreement": agreement,
+        })
+    return items
+
+
 class ShadowResult(NamedTuple):
     """The forest's shadow output: its (advisory) decision + tree votes."""
     decision: Decision
     votes: dict  # tree name -> Verdict
+    # Per-item reads (item_reads), additive 2026-10-26: recorded on
+    # the real decision as Decision.shadow_items for the audit log
+    # and the per-item view. Empty when constructed by older callers.
+    items: tuple = ()
 
 
 class LayaForest:
@@ -293,7 +393,9 @@ class LayaForest:
             key_evidence=[f"{t['tree']}: {shown(t)}" for t in trees],
             tier=1, cost_usd=0.0,
         )
-        return ShadowResult(decision=decision, votes=agg["votes"])
+        return ShadowResult(decision=decision, votes=agg["votes"],
+                            items=tuple(item_reads(facts, results,
+                                                   trees)))
 
     def decide(self, deal: Deal, results: list[CheckResult]) -> Decision:
         return self.shadow(deal, results).decision

@@ -195,6 +195,8 @@ def _attach_shadow(decision: Decision, shadow) -> None:
         return
     decision.shadow_verdict = shadow.decision.verdict.value
     decision.shadow_confidence = shadow.decision.confidence
+    if shadow.items:
+        decision.shadow_items = [dict(item) for item in shadow.items]
     if shadow.votes:
         backers = sum(1 for v in shadow.votes.values()
                       if v == decision.verdict)
