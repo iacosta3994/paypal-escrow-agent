@@ -1,88 +1,152 @@
-# Demo Script — 3 scenarios, < 3 minutes
+# Demo Script — project escrow first, < 3 minutes
 
 Thesis: **AI you can trust with money, because it shows its work.**
+
+The headline use case is **project escrow**: a client pays for work —
+a build, a deliverable, a milestone — and the money moves only when
+the delivered work is verified against the requirements the client
+froze before funding. Physical-goods escrow runs on the same kernel
+and appears as a side example, not the pitch.
+
+This script matches the accepted final cut
+(demo-video-v2-fixed2-2026-10-29.mp4, 2:32) and doubles as the live
+walkthrough script. Beats marked **[walkthrough]** are presenter
+lines for the live demo and Q&A; they are not in the recorded cut.
+
+## What the demo proves (the judge's map)
+
+- **PayPal moves the money, for real.** Authorize / capture / void
+  and partial capture on the sandbox rail; a split settlement
+  ($150 captured, remainder voided) and a full $300 authorize →
+  capture were proven live on 2026-10-25, read back on PayPal's
+  side. Buyer approval is a human click on PayPal's own page —
+  there is no API for it, and the script says so out loud.
+- **AI is used where it is trusted, and only there.** A
+  deterministic Tier 0 kernel owns every hard call; a local shadow
+  sensor advises and can never move money; an AI layer reviews the
+  documents on hand for genuinely ambiguous cases and escalates to
+  a human if still uncertain.
+- **The requirements list is the agreement and the audit.** One
+  frozen, versioned list — the same list at funding and at
+  grading. Every verdict cites it, item by item, with evidence.
+- **Settlement follows measurement.** A delivery measuring 40% of
+  its list settles its milestone at 40%. 90%+ releases in full;
+  under 20% refunds. Nothing settles on a vibe.
 
 ## Demo links (share-link identity)
 
 The dashboard is at `/`. Every party page is a share link —
 `/deal/<id>?party=<buyer|seller>&k=<token>` — and holding the link
 IS being that party (demo-grade identity; see README limitations).
-The three seeded deals use stable tokens so these links never
-churn: buyer `demo-link-buyer`, seller `demo-link-seller`. Deals
-proposed live in the UI get random tokens; the proposer lands on
-their own link with the counterparty's link shown, ready to send.
-The Oct 29 rehearsal walkthrough: propose a milestone deal from
-`/propose`, send the counterparty link to a second browser, accept
-there, fund, then work the milestones from both sides.
+The seeded deals use stable tokens so these links never churn:
+buyer `demo-link-buyer`, seller `demo-link-seller`. Deals proposed
+live in the UI get random tokens; the proposer lands on their own
+link with the counterparty's link shown, ready to send. For a live
+walkthrough: propose a project deal from `/propose`, send the
+counterparty link to a second browser, accept there, fund, then
+work the milestones from both sides.
 
-## Scenario 1 — Clean release (the happy path)
-- Deal: $500 used camera, buyer + seller, release on delivery confirmation.
-- Terms before money: the seller proposes the deal; the buyer accepts
-  on their own deal page. Until both parties have accepted, funding
-  doesn't exist — show the fund action refused/pending pre-acceptance.
-- Funding pauses at AWAITING_APPROVAL: PayPal has no API to approve as
-  the buyer, so the buyer approves on PayPal's own page — a human
-  authorizes every hold; say so out loud, it's a trust beat, not a gap.
-  (In the live system a PayPal webhook — CHECKOUT.ORDER.APPROVED —
-  completes the funding the moment the approval lands.)
-- PayPal authorization locks $500 (show the hold on screen). Each
-  party's page shows the state change and a notice lands in the
-  outbox — the parties watch the same lifecycle the operator does.
-- Simulated tracking: label created → picked up → in transit → delivered,
-  ZIP matches.
-- Day 1, still in transit: the rules can't settle it yet — **INVESTIGATE**,
-  keep monitoring. The shadow sensor's advisory verdict is logged next to
-  the decision (watch the dashboard's shadow column).
-- Day 3, delivered, ZIP matches: checklist all pass, Tier 0 decision.
-- **Verdict: RELEASE.** Show the reasoning + evidence + cost ($0.00 —
-  the deterministic tier is free).
-- Capture executes; seller gets $500.
-- Buyer-confirmation beat (say it in one line): had the tracking been
-  silent, the buyer's own "confirm receipt" on their deal page would
-  release this too — the buyer is the address authority. Confirmation
-  is a first-class input, not a comment box.
+## Hook (0:00–0:17, in the cut)
 
-## Scenario 2 — Never ships (the refund)
-- Deal: $300 mechanical keyboard. Authorization locks $300.
-- Tracking: label created… then nothing. Days pass, no pickup scan.
-- Days 1–3: **INVESTIGATE** (shadow sensor agrees, also logged) while the
-  stall clock runs.
-- Day 6: pickup check FAILS, stall threshold breached, Tier 0 hard fail.
-- **Verdict: REFUND.** Show the reasoning ("no carrier pickup in 7 days").
-- Void executes; buyer refunded.
+"In agentic commerce, the hardest question isn't what to buy. It's
+when to let the money go." An escrow agent that shows its work:
+every verdict with its evidence and its cost, on one dashboard.
 
-## Scenario 3 — Ambiguous (the escalation)
-- Deal: $1,200 laptop, milestone-structured: **delivery $900** +
-  **condition verified $300**. Delivered scan present, ZIP matches —
-  but the carrier reports the package visibly damaged, so condition
-  is disputed.
+## Beat A — Project escrow: graded against the agreement (0:17–0:53)
+
+- A project is an agreement: the client and the builder freeze the
+  **requirements list** before any money moves. That list is the
+  contract and the audit checklist in one artifact. The deal is
+  funded in milestone shares, each share tied to requirements on
+  the list.
+- Funding pauses at AWAITING_APPROVAL: PayPal has no API to
+  approve as the buyer, so the client approves on PayPal's own
+  page — a human authorizes every hold; say so out loud, it's a
+  trust beat, not a gap. (A PayPal webhook — CHECKOUT.ORDER.APPROVED —
+  completes the funding the moment the approval lands. For this
+  demo, the approval beat stands on the proven 2026-10-25 sandbox
+  record: order approved → authorization → capture/void, read back
+  on PayPal's side.)
+- The builder delivers a repo. The grader checks **every
+  requirement** against what actually shipped — modules present,
+  functions real (AST-verified, not stubs), the test suite, the
+  docs — and returns each item with its evidence.
+- This delivery measures **40.0%** of the list, so its milestone
+  settles at forty percent: **SPLIT at the measured fraction** —
+  partial capture, remainder voided. Ninety or better would
+  release in full. Under twenty refunds. The client never pays
+  for the 60% that didn't ship; the builder is never stiffed for
+  the 40% that did.
+
+## Beat B — Won't guess: the decisive unknown (0:53–1:15)
+
+- A second delivery measures **70%** — but its decisive item was
+  never verified, and that single unknown is the one that decides
+  release versus split.
+- **Verdict: INVESTIGATE.** An AI layer reviews the documents on
+  hand for the case; if it is still uncertain, the case escalates
+  to a human, evidence attached, while the money waits. No
+  automatic release, no automatic refund on an unverified
+  decisive item — the system refuses to guess with someone else's
+  money.
+
+## Beat C — Milestones settle independently (1:15–1:42)
+
+- The milestone mechanics, shown on a $1,200 laptop deal:
+  **delivery $900** + **condition verified $300**. Delivered scan
+  present, ZIP matches — but the carrier reports the package
+  visibly damaged, so condition is disputed.
 - The delivery milestone verifies on its own checks and releases
-  its $900 share; the condition milestone's checklist reads
-  condition CONFLICT.
-- **Verdict on the condition milestone: INVESTIGATE** — from day 1
-  and every day after. The system refuses to guess: no automatic
-  release, no automatic refund on a condition dispute. It escalates
-  for a human with the evidence attached, and the settled delivery
-  share is never unwound by the open question.
-- This is the trust moment: the AI knows what it doesn't know.
-- Resolution beat (the lifecycle closing): the buyer disputes the
-  condition milestone on their deal page and attaches their damage
-  report as evidence; the seller's evidence appears under the same
-  milestone. The parties accept a split of that milestone's $300
-  share, and the system executes exactly that: capture the agreed
-  part, void the rest, the deal closes SPLIT_SETTLED, both parties
-  notified. If they accept nothing, the INVESTIGATE above is where
-  it stays — a human decides.
-  (A partial shipment settles the same way, proportionally, without
-  a dispute: capture the delivered fraction, void the rest.)
-- **The shadow tier (say it plainly):** "We also run a small local model
-  on every case the rules can't settle. We benchmarked it as a judge
-  first — it failed our adjudication checklist. So we demoted it to a
-  sensor. Its verdict is written into the audit log next to the real
-  decision, and if it ever disagrees, the case escalates to a human. It
-  can flag. It can never move money. That's the whole pitch: every layer
-  of this system is only trusted as far as it was measured."
+  its $900 share. The condition milestone's checklist reads
+  condition CONFLICT: **INVESTIGATE** from day 1.
+- Resolution beat: the buyer disputes the condition milestone on
+  their deal page and attaches their damage report; the seller's
+  evidence appears under the same milestone. The parties accept a
+  split of the $300 share ($150/$150); the system executes exactly
+  that and the deal closes **SPLIT_SETTLED — $1,050 captured /
+  $150 voided**, both parties notified. **The settled delivery
+  share is never unwound by the open question.** If they accept
+  nothing, INVESTIGATE is where it stays — a human decides.
+  (Project deals settle the same way per milestone: a failed
+  milestone refunds its share without touching the shares that
+  already settled.)
 
-## Dashboard during all three
-Live deal states, event feed, and **cost-per-decision** next to every
-verdict. The unit economics are part of the pitch.
+## Beat D — Goods: the same kernel on parcels (1:42–2:04)
+
+- **Camera — clean release.** $500 used camera. Terms before
+  money: the seller proposes, the buyer accepts on their own deal
+  page; until both have accepted, funding doesn't exist. PayPal
+  authorization locks $500. Day 1, in transit: **INVESTIGATE**.
+  Day 3, delivered, ZIP matches: Tier 0 — **RELEASE**, reasoning,
+  evidence, and cost on screen ($0.00 — the deterministic tier is
+  free). Capture executes; seller gets $500.
+- **Keyboard — never ships, refund.** $300. Label created, then
+  nothing. Day 6: the pickup check FAILS its stall threshold —
+  **REFUND**, "no carrier pickup in 7 days." Void executes; the
+  buyer is refunded.
+- Transition line: "Different evidence. Same discipline."
+
+## Close — the shadow tier (2:04–2:32, say it plainly)
+
+"We also run a small local model on every case the rules can't
+settle. We benchmarked it as a judge first — it failed our
+adjudication checklist. So we demoted it to a sensor. Its verdict
+is written into the audit log next to the real decision, and if
+it ever disagrees, the case escalates to a human. It can flag.
+It can never move money. That's the whole pitch: every layer of
+this system is only trusted as far as it was measured."
+
+Measured, not asserted: on a frozen 570-question hostile ladder
+the sensor holds 0.947 pooled accuracy, wired in as a regression
+gate — it has already caught one of our own changes regressing
+it and sent it back.
+
+## Dashboard throughout
+
+Live deal states with their agreed completion dates, the event
+feed, grade results, and **cost-per-decision** next to every
+verdict — most verdicts read $0.00. The unit economics are part
+of the pitch. One quiet line if asked about the rail: an
+authorization-expiry watch flags an aging hold at 20 days and
+escalates at 25, because PayPal expires authorizations at 29 —
+an escrow must never discover an empty hold at day 30.
