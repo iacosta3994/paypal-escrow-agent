@@ -71,9 +71,12 @@ runs the whole ring, driven by the two parties rather than an operator:
   `PAYMENT.AUTHORIZATION.VOIDED`, and `PAYMENT.CAPTURE.COMPLETED`
   events idempotently (an approval completes the funding it was
   waiting on). The polling monitor remains the authoritative fallback
-  if an event is missed. Signature verification is required in
-  production and is deliberately not faked here — the sandbox listener
-  is exercised with PayPal-shaped fixture payloads.
+  if an event is missed. Signature verification is implemented, not
+  faked: when a webhook id is configured (`PAYPAL_WEBHOOK_ID`), every
+  delivery is verified with PayPal's `verify-webhook-signature` API
+  before it is trusted, and a delivery that fails verification is
+  rejected with no side effects. Unconfigured, the listener runs in
+  fixture mode for local testing and must not be exposed publicly.
 
 ## AI tools used
 
@@ -111,7 +114,7 @@ src/
                      repo (AST symbols, tests, README), same kernel
   pr_delivery/       PR grading: requirements list vs a GitHub pull
                      request (changed files, check runs, checklist)
-tests/               383 tests: lifecycle, money path vs the live
+tests/               431 tests: lifecycle, money path vs the live
                      sandbox, split settlement, webhooks, disputes,
                      party UI, golden corpus, hygiene + ladder gates,
                      repo/PR grading, grade workbench
@@ -139,7 +142,7 @@ python -m pytest tests/                  # or run the test files directly
 
 ## Status
 
-Week 4 of 5. The full lifecycle is built and tested end-to-end: two-party
+Submission build (frozen Nov 10, 2026). The full lifecycle is built and tested end-to-end: two-party
 terms, funding, buyer confirmation, monitoring, disputes with party
 evidence, split settlement, webhooks, party pages and notifications.
 On top of that, the architecture increment (2026-10-24) formalized the
@@ -172,8 +175,9 @@ shared Atlas Glass shell. Laya's per-item reads are an additive
 audit field; adjudication is unchanged, and the ladder gate holds
 at 0.947 pooled accuracy.
 
-425 tests passing, 1 skip (the manual buyer-approval leg) — the full
-suite ran green on 2026-10-26, including the live sandbox legs; the
+431 tests passing, 1 skip (the manual buyer-approval leg) — the full
+suite ran green at the freeze gate on 2026-11-09, including the live
+sandbox legs; the
 buyer-approval leg itself was verified end-to-end in manual mode
 against a live sandbox buyer session on 2026-10-25 (see
 Limitations). The
@@ -183,8 +187,9 @@ release on an unverified delivery address — now fixed and guarded.
 A frozen 48-case held-out benchmark (eval/) measured the build
 before and after the increment: verdict accuracy 48/48 and sensor
 accuracy 0.979 both runs, no drift. All three demo scenarios produce
-the correct verdict at $0 total AI spend. Remaining: demo video and
-Devpost submission — see BUILD_PLAN.md.
+the correct verdict at $0 total AI spend. The demo video is final
+(2:32, linked from the Devpost submission); remaining: the Devpost
+submission itself — see BUILD_PLAN.md.
 
 ## Limitations — stated plainly
 
@@ -261,7 +266,9 @@ PayPal's own sign-in captcha (the credentialed POST is refused), so
 manual mode is the verified path: on 2026-10-25 the full suite ran
 368 passed / 0 failed / 0 skipped with approvals clicked in a live
 sandbox buyer session — order approved, authorization CREATED for
-the full amount, then voided by the test as cleanup.
+the full amount, then voided by the test as cleanup. The sandbox
+evidence from that session: order `9AY42703L3607051D` (APPROVED) →
+authorization `6N471818HL119145T` → VOIDED.
 
 ## License
 

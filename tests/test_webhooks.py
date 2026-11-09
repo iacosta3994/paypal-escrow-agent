@@ -11,6 +11,7 @@ blueprint exercised through a test client on a throwaway app
 import pytest
 from flask import Flask
 
+from src import config, webhooks
 from src.deal_manager import DealManager
 from src.models import DealState
 from src.webhooks import find_deal, handle_event, register_webhooks
@@ -346,3 +347,110 @@ def test_blueprint_malformed_event_400():
                        json={"event_type": "CHECKOUT.ORDER.APPROVED"})
     assert resp.status_code == 400
     assert "error" in resp.get_json()
+
+
+# --- Signature verification (PAYPAL_WEBHOOK_ID configured) ---
+
+_TX_HEADERS = {
+    "PayPal-Auth-Algo": "SHA256withRSA",
+    "PayPal-Cert-Url": "https://api.sandbox.paypal.com/certs/CERT-1",
+    "PayPal-Transmission-Id": "tx-123",
+    "PayPal-Transmission-Sig": "sig-abc",
+    "PayPal-Transmission-Time": "2026-10-28T12:34:56Z",
+}
+
+
+@pytest.fixture
+def _webhook_id(monkeypatch):
+    monkeypatch.setattr(config, "PAYPAL_WEBHOOK_ID", "WH-TEST-ID")
+
+
+def test_verified_delivery_applies(_webhook_id, monkeypatch):
+    monkeypatch.setattr(webhooks, "verify_signature",
+                        lambda headers, payload: True)
+    mgr = DealManager(use_paypal=False)
+    deal = _awaiting_deal(mgr)
+    client = _client(mgr)
+
+    resp = client.post("/webhooks/paypal", json=_order_approved(),
+                       headers=_TX_HEADERS)
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "applied"
+    assert deal.state == DealState.FUNDED
+
+
+def test_unverified_delivery_rejected_no_side_effects(_webhook_id,
+                                                      monkeypatch):
+    monkeypatch.setattr(webhooks, "verify_signature",
+                        lambda headers, payload: False)
+    mgr = DealManager(use_paypal=False)
+    deal = _awaiting_deal(mgr)
+    client = _client(mgr)
+
+    resp = client.post("/webhooks/paypal", json=_order_approved(),
+                       headers=_TX_HEADERS)
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "rejected"
+    assert deal.state == DealState.AWAITING_APPROVAL
+    assert deal.buyer_approved_at is None
+    # Not recorded as processed: a later verified redelivery can apply.
+    assert "WH-ORDER-1" not in getattr(mgr, "_webhook_event_ids", set())
+
+
+def test_missing_transmission_headers_fail_without_network(_webhook_id,
+                                                           monkeypatch):
+    called = []
+    monkeypatch.setattr(webhooks, "_verify_request",
+                        lambda body: called.append(body) or True)
+    mgr = DealManager(use_paypal=False)
+    _awaiting_deal(mgr)
+    client = _client(mgr)
+
+    resp = client.post("/webhooks/paypal", json=_order_approved())
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "rejected"
+    assert called == []
+
+
+def test_verify_signature_builds_paypal_body(_webhook_id, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(webhooks, "_verify_request",
+                        lambda body: seen.update(body) or True)
+    payload = _order_approved()
+
+    assert webhooks.verify_signature(_TX_HEADERS, payload) is True
+    assert seen["webhook_id"] == "WH-TEST-ID"
+    assert seen["transmission_id"] == "tx-123"
+    assert seen["auth_algo"] == "SHA256withRSA"
+    assert seen["cert_url"].endswith("CERT-1")
+    assert seen["webhook_event"] == payload
+
+
+def test_verify_request_success_and_failure(monkeypatch):
+    class Resp:
+        def __init__(self, status):
+            self._status = status
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"verification_status": self._status}
+
+    monkeypatch.setattr(webhooks.paypal_client, "_headers", lambda: {})
+    monkeypatch.setattr(webhooks.requests, "post",
+                        lambda *a, **k: Resp("SUCCESS"))
+    assert webhooks._verify_request({}) is True
+    monkeypatch.setattr(webhooks.requests, "post",
+                        lambda *a, **k: Resp("FAILURE"))
+    assert webhooks._verify_request({}) is False
+
+
+def test_verify_request_fails_closed_on_transport_error(monkeypatch):
+    monkeypatch.setattr(webhooks.paypal_client, "_headers", lambda: {})
+
+    def boom(*a, **k):
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(webhooks.requests, "post", boom)
+    assert webhooks._verify_request({}) is False

@@ -15,6 +15,11 @@ def get(key: str, default: str = "") -> str:
 PAYPAL_CLIENT_ID = get("PAYPAL_CLIENT_ID")
 PAYPAL_CLIENT_SECRET = get("PAYPAL_CLIENT_SECRET")
 PAYPAL_MODE = get("PAYPAL_MODE", "sandbox")  # sandbox | live
+PAYPAL_WEBHOOK_ID = get("PAYPAL_WEBHOOK_ID", "")
+# When set, the webhook listener verifies every delivery's signature
+# with PayPal before trusting it (see src/webhooks.py). Empty = the
+# listener runs in sandbox/fixture mode and must not be exposed
+# publicly.
 
 LLM_TIER1_PROVIDER = get("LLM_TIER1_PROVIDER", "laya")  # laya forest, local
 LLM_TIER2_PROVIDER = get("LLM_TIER2_PROVIDER", "xai")

@@ -38,20 +38,23 @@ is missed, delayed, or the listener is down, the polling/monitor
 path still converges on the same state — webhooks only make the
 common path faster, they are never the sole source of truth.
 
-PRODUCTION NOTE — signature verification is REQUIRED in production
-and is NOT implemented here. A real listener must verify every
-delivery with PayPal's ``verify-webhook-signature`` API (using the
-transmission id/sig, cert URL, auth algo, and the webhook id from
-the request headers) before trusting the payload; without it, anyone
-who can reach the endpoint could forge money events. This sandbox
-listener exists to exercise the handler logic and is tested with
-fixture payloads shaped like real PayPal events; do not expose it
-publicly as-is.
+SIGNATURE VERIFICATION — implemented, and enforced whenever
+``PAYPAL_WEBHOOK_ID`` is configured: every delivery is verified with
+PayPal's ``verify-webhook-signature`` API (transmission id/sig, cert
+URL, auth algo, and the configured webhook id) before the payload is
+trusted, and a delivery that fails verification is rejected with no
+side effects. Without it, anyone who can reach the endpoint could
+forge money events. When no webhook id is configured the listener
+runs in sandbox/fixture mode — handler logic exercised with fixture
+payloads shaped like real PayPal events — and must not be exposed
+publicly in that mode.
 """
 from datetime import datetime, timezone
 
+import requests
 from flask import Blueprint, jsonify, request
 
+from . import config, paypal_client
 from .models import Deal, DealState
 
 # Terminal settled states: a late money event must never flip a deal
@@ -217,6 +220,46 @@ def handle_event(manager, payload) -> dict:
     return _result("ignored", payload, reason="unhandled event type")
 
 
+def _verify_request(body: dict) -> bool:
+    """POST the verification body to PayPal; True only on SUCCESS.
+
+    Fails closed: any transport error, non-200, or unexpected body
+    returns False — an unverifiable delivery is an untrusted one.
+    """
+    try:
+        r = requests.post(
+            f"{paypal_client._base_url()}"
+            "/v1/notifications/verify-webhook-signature",
+            headers=paypal_client._headers(), json=body, timeout=15)
+        r.raise_for_status()
+        return r.json().get("verification_status") == "SUCCESS"
+    except Exception:
+        return False
+
+
+def verify_signature(headers, payload) -> bool:
+    """Verify one delivery's signature with PayPal.
+
+    ``headers`` is the request's header mapping (case-insensitive);
+    the five PayPal transmission headers plus the configured webhook
+    id and the event itself go to the verify API. A delivery missing
+    any transmission header fails without a network call.
+    """
+    fields = {
+        "auth_algo": headers.get("PayPal-Auth-Algo"),
+        "cert_url": headers.get("PayPal-Cert-Url"),
+        "transmission_id": headers.get("PayPal-Transmission-Id"),
+        "transmission_sig": headers.get("PayPal-Transmission-Sig"),
+        "transmission_time": headers.get("PayPal-Transmission-Time"),
+    }
+    if not all(fields.values()):
+        return False
+    body = dict(fields)
+    body["webhook_id"] = config.PAYPAL_WEBHOOK_ID
+    body["webhook_event"] = payload
+    return _verify_request(body)
+
+
 def make_blueprint(manager) -> Blueprint:
     """Flask blueprint exposing POST /webhooks/paypal for `manager`."""
     bp = Blueprint("paypal_webhooks", __name__)
@@ -226,6 +269,13 @@ def make_blueprint(manager) -> Blueprint:
         payload = request.get_json(silent=True)
         if payload is None:
             return jsonify({"error": "request body must be JSON"}), 400
+        if config.PAYPAL_WEBHOOK_ID:
+            # Verification is configured: an unverified delivery is
+            # rejected before it can touch any deal state.
+            if not verify_signature(request.headers, payload):
+                return jsonify(
+                    {"status": "rejected",
+                     "reason": "signature verification failed"}), 400
         try:
             result = handle_event(manager, payload)
         except ValueError as exc:
