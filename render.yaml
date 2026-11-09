@@ -1,0 +1,37 @@
+# Render Blueprint — hosted demo instance of the escrow agent.
+#
+# Deploy: Render dashboard → New + → Blueprint → connect this repo →
+# Apply. Render reads this file, builds with the command below and
+# serves the Flask app through gunicorn on its assigned $PORT (the
+# app's own dev-server start is not used). Secrets are declared
+# sync:false — Render prompts for them at creation and they are
+# never stored in this repo.
+#
+# Notes for the demo instance:
+# - Single worker on purpose: deal state lives in process memory
+#   (seeded demo deals are recreated at boot), so workers must not
+#   multiply. The long timeout covers the shadow sensor's first
+#   checkpoint load.
+# - The filesystem is ephemeral: a restart resets the instance to
+#   the seeded demo deals. Acceptable for a judging demo.
+# - Plan is deliberately unset: Free works (the instance sleeps
+#   when idle; first visit can take ~a minute to wake). Starter
+#   (~$7/mo) keeps it warm for the judging window.
+services:
+  - type: web
+    name: escrow-agent
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn src.app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 180
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
